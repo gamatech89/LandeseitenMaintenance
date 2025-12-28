@@ -28,10 +28,11 @@ class ProjectController extends Controller
 
         // Search
         if ($request->has('search') && $request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('url', 'like', '%'.$request->search.'%')
-                    ->orWhere('client_email', 'like', '%'.$request->search.'%');
+            $searchTerm = '%'.$request->search.'%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                    ->orWhere('url', 'like', $searchTerm)
+                    ->orWhere('client_email', 'like', $searchTerm);
             });
         }
 
@@ -94,6 +95,11 @@ class ProjectController extends Controller
             'health_status' => 'required|in:online,down_error,updating',
             'security_status' => 'required|in:secure,monitoring,compromised,hacked',
         ]);
+
+        // Sanitize notes to prevent XSS
+        if (isset($validated['notes'])) {
+            $validated['notes'] = strip_tags($validated['notes']);
+        }
 
         $project->update($validated);
 
