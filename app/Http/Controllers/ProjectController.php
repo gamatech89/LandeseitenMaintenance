@@ -29,9 +29,9 @@ class ProjectController extends Controller
         // Search
         if ($request->has('search') && $request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('url', 'like', '%' . $request->search . '%')
-                  ->orWhere('client_email', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('url', 'like', '%'.$request->search.'%')
+                    ->orWhere('client_email', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -84,13 +84,15 @@ class ProjectController extends Controller
      */
     public function update(Request $request, Project $project)
     {
+        $this->authorize('update', $project);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url',
             'client_email' => 'nullable|email',
             'notes' => 'nullable|string',
-            'health_status' => 'required|in:up,down,maintenance',
-            'security_status' => 'required|in:secure,compromised,hacked',
+            'health_status' => 'required|in:online,down_error,updating',
+            'security_status' => 'required|in:secure,monitoring,compromised,hacked',
         ]);
 
         $project->update($validated);
@@ -103,6 +105,8 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
+        $this->authorize('delete', $project);
+
         $project->delete();
 
         return redirect()->route('projects.index')

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Project;
 use App\Models\Credential;
+use App\Models\Project;
 use App\Models\Resource;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -212,32 +212,32 @@ class DatabaseSeeder extends Seeder
             // Create 2-4 credentials per project
             $credentialTypes = ['ssh', 'ftp', 'db', 'wp_admin', 'api'];
             $numCredentials = rand(2, 4);
-            
+
             for ($i = 0; $i < $numCredentials; $i++) {
                 $type = $credentialTypes[array_rand($credentialTypes)];
-                
+
                 Credential::create([
                     'project_id' => $project->id,
-                    'title' => ucfirst($type) . ' Access',
+                    'title' => ucfirst($type).' Access',
                     'type' => $type,
-                    'username' => 'user_' . strtolower($project->name),
-                    'password' => 'SecurePass' . rand(1000, 9999) . '!',
-                    'url' => $type === 'wp_admin' ? $project->url . '/wp-admin' : $project->url,
+                    'username' => 'user_'.strtolower($project->name),
+                    'password' => 'SecurePass'.rand(1000, 9999).'!',
+                    'url' => $type === 'wp_admin' ? $project->url.'/wp-admin' : $project->url,
                 ]);
             }
 
             // Create 1-3 resources per project
             $resourceLinks = [
-                ['title' => 'Figma Design', 'url' => 'https://figma.com/project-' . $project->id],
-                ['title' => 'Hosting Panel', 'url' => 'https://hosting-provider.com/client-' . $project->id],
-                ['title' => 'Google Analytics', 'url' => 'https://analytics.google.com/site-' . $project->id],
-                ['title' => 'Project Documentation', 'url' => 'https://docs.internal/project-' . $project->id],
+                ['title' => 'Figma Design', 'url' => 'https://figma.com/project-'.$project->id],
+                ['title' => 'Hosting Panel', 'url' => 'https://hosting-provider.com/client-'.$project->id],
+                ['title' => 'Google Analytics', 'url' => 'https://analytics.google.com/site-'.$project->id],
+                ['title' => 'Project Documentation', 'url' => 'https://docs.internal/project-'.$project->id],
             ];
 
             $numResources = rand(1, 3);
             for ($i = 0; $i < $numResources; $i++) {
                 $link = $resourceLinks[$i % count($resourceLinks)];
-                
+
                 Resource::create([
                     'project_id' => $project->id,
                     'title' => $link['title'],

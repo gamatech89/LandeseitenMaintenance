@@ -10,6 +10,8 @@ class TodoController extends Controller
 {
     public function store(Request $request, Project $project)
     {
+        $this->authorize('create', Todo::class);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -24,6 +26,13 @@ class TodoController extends Controller
 
     public function update(Request $request, Project $project, Todo $todo)
     {
+        // Verify todo belongs to project
+        if ($todo->project_id !== $project->id) {
+            abort(404);
+        }
+
+        $this->authorize('update', $todo);
+
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
@@ -39,6 +48,13 @@ class TodoController extends Controller
 
     public function destroy(Project $project, Todo $todo)
     {
+        // Verify todo belongs to project
+        if ($todo->project_id !== $project->id) {
+            abort(404);
+        }
+
+        $this->authorize('delete', $todo);
+
         $todo->delete();
 
         return back()->with('success', 'Todo deleted successfully!');
