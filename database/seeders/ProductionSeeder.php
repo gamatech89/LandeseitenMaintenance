@@ -38,8 +38,14 @@ class ProductionSeeder extends Seeder
      */
     private function clearAllData(): void
     {
+        $driver = DB::getDriverName();
+        
         // Disable foreign key checks temporarily
-        DB::statement('PRAGMA foreign_keys = OFF;');
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+        }
 
         // Clear all tables in correct order
         DB::table('credential_share_access_logs')->truncate();
@@ -56,7 +62,11 @@ class ProductionSeeder extends Seeder
         DB::table('users')->truncate();
 
         // Re-enable foreign key checks
-        DB::statement('PRAGMA foreign_keys = ON;');
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+        }
     }
 
     /**
