@@ -12,13 +12,49 @@ export default function NotFound() {
                 style={{
                     minHeight: "100vh",
                     background:
-                        "linear-gradient(135deg, #636e72 0%, #2d3436 100%)",
+                        "linear-gradient(135deg, #6c1e9f 0%, #4a1470 100%)",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "20px",
                 }}
             >
+                {/* Logo Header */}
+                <div style={{ marginBottom: 24, textAlign: "center" }}>
+                    <div
+                        style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.15)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto 8px",
+                        }}
+                    >
+                        <img
+                            src="/images/logo.png"
+                            alt="LSM Logo"
+                            style={{
+                                width: 40,
+                                height: 40,
+                                objectFit: "contain",
+                            }}
+                        />
+                    </div>
+                    <span
+                        style={{
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: 18,
+                        }}
+                    >
+                        LSM
+                    </span>
+                </div>
+
                 <Card
                     style={{
                         maxWidth: 400,
@@ -29,7 +65,7 @@ export default function NotFound() {
                 >
                     <Result
                         icon={
-                            <FileUnknownOutlined style={{ color: "#636e72" }} />
+                            <FileUnknownOutlined style={{ color: "#6c1e9f" }} />
                         }
                         title="Link Not Found"
                         subTitle={

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Maintenance Report - {{ $project->name }}</title>
@@ -9,6 +10,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 12px;
@@ -16,20 +18,24 @@
             color: #333;
             padding: 30px;
         }
+
         .header {
             border-bottom: 2px solid #6c1e9f;
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+
         .header h1 {
             color: #6c1e9f;
             font-size: 24px;
             margin-bottom: 5px;
         }
+
         .header .subtitle {
             color: #666;
             font-size: 14px;
         }
+
         .meta-row {
             display: table;
             width: 100%;
@@ -38,23 +44,28 @@
             padding: 10px;
             border-radius: 5px;
         }
+
         .meta-item {
             display: table-cell;
             width: 25%;
         }
+
         .meta-label {
             color: #666;
             font-size: 10px;
             text-transform: uppercase;
             display: block;
         }
+
         .meta-value {
             font-weight: bold;
             color: #333;
         }
+
         .section {
             margin-bottom: 20px;
         }
+
         .section-title {
             color: #6c1e9f;
             font-size: 14px;
@@ -63,19 +74,23 @@
             padding-bottom: 5px;
             border-bottom: 1px solid #e0e0e0;
         }
+
         .content-box {
             background: #f8f9fa;
             padding: 12px;
             border-radius: 5px;
             border-left: 3px solid #6c1e9f;
         }
+
         ul {
             margin: 0;
             padding-left: 20px;
         }
+
         li {
             margin-bottom: 5px;
         }
+
         .badge {
             display: inline-block;
             padding: 2px 8px;
@@ -84,9 +99,22 @@
             font-weight: bold;
             text-transform: uppercase;
         }
-        .badge-monthly { background: #e6f7ff; color: #1890ff; }
-        .badge-weekly { background: #f6ffed; color: #52c41a; }
-        .badge-adhoc { background: #fff7e6; color: #fa8c16; }
+
+        .badge-monthly {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .badge-weekly {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .badge-adhoc {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
         .footer {
             margin-top: 30px;
             padding-top: 15px;
@@ -95,26 +123,31 @@
             color: #999;
             text-align: center;
         }
+
         .two-column {
             display: table;
             width: 100%;
         }
+
         .column {
             display: table-cell;
             width: 50%;
             vertical-align: top;
             padding-right: 10px;
         }
+
         .column:last-child {
             padding-right: 0;
             padding-left: 10px;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>Maintenance Report</h1>
-        <div class="subtitle">{{ $project->name }} @if($project->project_external_id)({{ $project->project_external_id }})@endif</div>
+        <div class="subtitle">{{ $project->name }} @if($project->project_external_id)({{ $project->project_external_id
+            }})@endif</div>
     </div>
 
     <div class="meta-row">
@@ -136,13 +169,13 @@
             <span class="meta-label">Time Spent</span>
             <span class="meta-value">
                 @if($report->time_spent_minutes)
-                    @php
-                        $hours = floor($report->time_spent_minutes / 60);
-                        $mins = $report->time_spent_minutes % 60;
-                    @endphp
-                    {{ $hours > 0 ? $hours . 'h ' : '' }}{{ $mins > 0 ? $mins . 'm' : ($hours > 0 ? '' : '0m') }}
+                @php
+                $hours = floor($report->time_spent_minutes / 60);
+                $mins = $report->time_spent_minutes % 60;
+                @endphp
+                {{ $hours > 0 ? $hours . 'h ' : '' }}{{ $mins > 0 ? $mins . 'm' : ($hours > 0 ? '' : '0m') }}
                 @else
-                    Not tracked
+                Not tracked
                 @endif
             </span>
         </div>
@@ -161,7 +194,7 @@
         <div class="content-box">
             <ul>
                 @foreach($report->tasks_completed as $task)
-                    <li>{{ $task }}</li>
+                <li>{{ $task }}</li>
                 @endforeach
             </ul>
         </div>
@@ -174,7 +207,7 @@
         <div class="content-box">
             <ul>
                 @foreach($report->updates_performed as $update)
-                    <li>{{ is_array($update) ? ($update['name'] ?? $update) : $update }}</li>
+                <li>{{ is_array($update) ? ($update['name'] ?? $update) : $update }}</li>
                 @endforeach
             </ul>
         </div>
@@ -189,7 +222,7 @@
                 <div class="content-box">
                     <ul>
                         @foreach($report->issues_found as $issue)
-                            <li>{{ $issue }}</li>
+                        <li>{{ $issue }}</li>
                         @endforeach
                     </ul>
                 </div>
@@ -204,7 +237,7 @@
                 <div class="content-box">
                     <ul>
                         @foreach($report->issues_resolved as $issue)
-                            <li>{{ $issue }}</li>
+                        <li>{{ $issue }}</li>
                         @endforeach
                     </ul>
                 </div>
@@ -226,4 +259,5 @@
         Generated on {{ now()->format('F j, Y \a\t g:i A') }} • LSM - Landeseiten Maintenance
     </div>
 </body>
+
 </html>

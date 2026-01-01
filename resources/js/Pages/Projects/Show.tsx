@@ -2339,51 +2339,147 @@ export default function ProjectShow({
                                                     {/* Landeseiten Stack */}
                                                     {project.last_health_details
                                                         .landeseiten_stack && (
-                                                        <Col xs={24} sm={12} lg={8}>
+                                                        <Col
+                                                            xs={24}
+                                                            sm={12}
+                                                            lg={8}
+                                                        >
                                                             <Card
                                                                 size="small"
                                                                 title={
                                                                     <Space>
-                                                                        <span>Landeseiten Stack</span>
-                                                                        {project.last_health_details.landeseiten_stack.stack_complete ? (
-                                                                            <Tag color="success">Complete</Tag>
+                                                                        <span>
+                                                                            Landeseiten
+                                                                            Stack
+                                                                        </span>
+                                                                        {project
+                                                                            .last_health_details
+                                                                            .landeseiten_stack
+                                                                            .stack_complete ? (
+                                                                            <Tag color="success">
+                                                                                Complete
+                                                                            </Tag>
                                                                         ) : (
-                                                                            <Tag color="warning">Incomplete</Tag>
+                                                                            <Tag color="warning">
+                                                                                Incomplete
+                                                                            </Tag>
                                                                         )}
                                                                     </Space>
                                                                 }
                                                             >
-                                                                <Space direction="vertical" style={{ width: '100%' }}>
+                                                                <Space
+                                                                    direction="vertical"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                    }}
+                                                                >
                                                                     <div>
-                                                                        {project.last_health_details.landeseiten_stack.hello_elementor.active ? (
-                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
-                                                                                Hello Elementor {project.last_health_details.landeseiten_stack.hello_elementor.version}
+                                                                        {project
+                                                                            .last_health_details
+                                                                            .landeseiten_stack
+                                                                            .hello_elementor
+                                                                            .active ? (
+                                                                            <Tag
+                                                                                color="success"
+                                                                                icon={
+                                                                                    <CheckCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                Hello
+                                                                                Elementor{" "}
+                                                                                {
+                                                                                    project
+                                                                                        .last_health_details
+                                                                                        .landeseiten_stack
+                                                                                        .hello_elementor
+                                                                                        .version
+                                                                                }
                                                                             </Tag>
                                                                         ) : (
-                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
-                                                                                Hello Elementor Missing
+                                                                            <Tag
+                                                                                color="error"
+                                                                                icon={
+                                                                                    <CloseCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                Hello
+                                                                                Elementor
+                                                                                Missing
                                                                             </Tag>
                                                                         )}
                                                                     </div>
                                                                     <div>
-                                                                        {project.last_health_details.landeseiten_stack.child_theme.active ? (
-                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
-                                                                                {project.last_health_details.landeseiten_stack.child_theme.name || 'Child Theme'} {project.last_health_details.landeseiten_stack.child_theme.version}
+                                                                        {project
+                                                                            .last_health_details
+                                                                            .landeseiten_stack
+                                                                            .child_theme
+                                                                            .active ? (
+                                                                            <Tag
+                                                                                color="success"
+                                                                                icon={
+                                                                                    <CheckCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                {project
+                                                                                    .last_health_details
+                                                                                    .landeseiten_stack
+                                                                                    .child_theme
+                                                                                    .name ||
+                                                                                    "Child Theme"}{" "}
+                                                                                {
+                                                                                    project
+                                                                                        .last_health_details
+                                                                                        .landeseiten_stack
+                                                                                        .child_theme
+                                                                                        .version
+                                                                                }
                                                                             </Tag>
                                                                         ) : (
-                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
-                                                                                LS Child Theme Missing
+                                                                            <Tag
+                                                                                color="error"
+                                                                                icon={
+                                                                                    <CloseCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                LS
+                                                                                Child
+                                                                                Theme
+                                                                                Missing
                                                                             </Tag>
                                                                         )}
                                                                     </div>
                                                                     <div>
-                                                                        {project.last_health_details.landeseiten_stack.gravity_plugin.active ? (
-                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
-                                                                                LS Gravity {project.last_health_details.landeseiten_stack.gravity_plugin.version}
+                                                                        {project
+                                                                            .last_health_details
+                                                                            .landeseiten_stack
+                                                                            .gravity_plugin
+                                                                            .active ? (
+                                                                            <Tag
+                                                                                color="success"
+                                                                                icon={
+                                                                                    <CheckCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                LS
+                                                                                Gravity{" "}
+                                                                                {
+                                                                                    project
+                                                                                        .last_health_details
+                                                                                        .landeseiten_stack
+                                                                                        .gravity_plugin
+                                                                                        .version
+                                                                                }
                                                                             </Tag>
                                                                         ) : (
-                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
-                                                                                LS Gravity Missing
+                                                                            <Tag
+                                                                                color="error"
+                                                                                icon={
+                                                                                    <CloseCircleOutlined />
+                                                                                }
+                                                                            >
+                                                                                LS
+                                                                                Gravity
+                                                                                Missing
                                                                             </Tag>
                                                                         )}
                                                                     </div>

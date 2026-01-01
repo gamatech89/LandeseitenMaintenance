@@ -35,7 +35,7 @@ export default function PasswordRequired({
                 style={{
                     minHeight: "100vh",
                     background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        "linear-gradient(135deg, #6c1e9f 0%, #4a1470 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -62,15 +62,21 @@ export default function PasswordRequired({
                                     height: 80,
                                     borderRadius: "50%",
                                     background:
-                                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                        "linear-gradient(135deg, #6c1e9f 0%, #4a1470 100%)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     margin: "0 auto 16px",
                                 }}
                             >
-                                <LockOutlined
-                                    style={{ fontSize: 36, color: "white" }}
+                                <img
+                                    src="/images/logo.png"
+                                    alt="LSM Logo"
+                                    style={{
+                                        width: 50,
+                                        height: 50,
+                                        objectFit: "contain",
+                                    }}
                                 />
                             </div>
                             <Title level={3} style={{ margin: 0 }}>

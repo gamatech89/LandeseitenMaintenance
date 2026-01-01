@@ -122,7 +122,9 @@ export default function MaintenanceReportsTab({
         async (search: string, field: string) => {
             try {
                 const response = await fetch(
-                    `/api/maintenance-reports/suggestions?q=${encodeURIComponent(search)}&field=${field}`
+                    `/api/maintenance-reports/suggestions?q=${encodeURIComponent(
+                        search
+                    )}&field=${field}`
                 );
                 if (response.ok) {
                     const data = await response.json();

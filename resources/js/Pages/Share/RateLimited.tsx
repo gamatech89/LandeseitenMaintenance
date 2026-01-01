@@ -16,13 +16,49 @@ export default function RateLimited({ retryAfter }: RateLimitedProps) {
                 style={{
                     minHeight: "100vh",
                     background:
-                        "linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)",
+                        "linear-gradient(135deg, #6c1e9f 0%, #4a1470 100%)",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "20px",
                 }}
             >
+                {/* Logo Header */}
+                <div style={{ marginBottom: 24, textAlign: "center" }}>
+                    <div
+                        style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.15)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto 8px",
+                        }}
+                    >
+                        <img
+                            src="/images/logo.png"
+                            alt="LSM Logo"
+                            style={{
+                                width: 40,
+                                height: 40,
+                                objectFit: "contain",
+                            }}
+                        />
+                    </div>
+                    <span
+                        style={{
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: 18,
+                        }}
+                    >
+                        LSM
+                    </span>
+                </div>
+
                 <Card
                     style={{
                         maxWidth: 400,
@@ -33,7 +69,7 @@ export default function RateLimited({ retryAfter }: RateLimitedProps) {
                 >
                     <Result
                         icon={
-                            <HourglassOutlined style={{ color: "#9b59b6" }} />
+                            <HourglassOutlined style={{ color: "#6c1e9f" }} />
                         }
                         title="Too Many Requests"
                         subTitle={
