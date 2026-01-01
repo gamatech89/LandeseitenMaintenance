@@ -13,7 +13,7 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# /public/build  # Committed for deployment (server has no Node.js)
 /public/hot
 /public/storage
 /storage/*.key
