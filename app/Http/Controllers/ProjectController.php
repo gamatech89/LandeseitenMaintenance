@@ -117,6 +117,12 @@ class ProjectController extends Controller
 
         $project->load(['credentials', 'resources', 'todos.assignee:id,name', 'manager:id,name', 'developer:id,name', 'developers:id,name', 'tags']);
 
+        // Load maintenance reports with user info
+        $maintenanceReports = $project->maintenanceReports()
+            ->with('user:id,name')
+            ->orderBy('report_date', 'desc')
+            ->get();
+
         // Get managers (role = manager) for PM select
         $managers = User::where('role', 'manager')
             ->select('id', 'name')
@@ -145,6 +151,7 @@ class ProjectController extends Controller
 
         return Inertia::render('Projects/Show', [
             'project' => $project,
+            'maintenanceReports' => $maintenanceReports,
             'users' => $users,
             'managers' => $managers,
             'developers' => $developers,

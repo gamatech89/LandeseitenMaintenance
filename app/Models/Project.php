@@ -142,6 +142,14 @@ class Project extends Model
     }
 
     /**
+     * Get the maintenance reports for the project.
+     */
+    public function maintenanceReports(): HasMany
+    {
+        return $this->hasMany(MaintenanceReport::class);
+    }
+
+    /**
      * Get the tags for the project.
      */
     public function tags(): BelongsToMany

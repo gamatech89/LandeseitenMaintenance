@@ -277,6 +277,9 @@ class LSM_Health_Monitor {
             // Performance
             'performance' => $this->get_performance_data(),
             
+            // Landeseiten Stack Check
+            'landeseiten_stack' => $this->get_landeseiten_stack_status(),
+            
             // LSM Plugin Info
             'lsm_plugin' => [
                 'version' => LSM_HEALTH_VERSION,
@@ -454,6 +457,128 @@ class LSM_Health_Monitor {
             'wp_memory_limit' => WP_MEMORY_LIMIT,
             'wp_max_memory_limit' => defined('WP_MAX_MEMORY_LIMIT') ? WP_MAX_MEMORY_LIMIT : 'not_set',
         ];
+    }
+    
+    /**
+     * Get Landeseiten stack status (Hello Elementor + Child Theme + Gravity Plugin)
+     */
+    private function get_landeseiten_stack_status() {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        
+        $active_plugins = get_option('active_plugins', []);
+        $all_plugins = get_plugins();
+        $theme = wp_get_theme();
+        $parent_theme = $theme->parent();
+        
+        // Check for Hello Elementor theme
+        $hello_elementor_active = false;
+        $hello_elementor_version = null;
+        
+        // Current theme is Hello Elementor
+        if (strtolower($theme->get_stylesheet()) === 'hello-elementor') {
+            $hello_elementor_active = true;
+            $hello_elementor_version = $theme->get('Version');
+        }
+        // Parent theme is Hello Elementor
+        elseif ($parent_theme && strtolower($parent_theme->get_stylesheet()) === 'hello-elementor') {
+            $hello_elementor_active = true;
+            $hello_elementor_version = $parent_theme->get('Version');
+        }
+        
+        // Check for Landeseiten Child Theme
+        $child_theme_active = false;
+        $child_theme_version = null;
+        $child_theme_name = null;
+        
+        // Look for Landeseiten-related child themes
+        $landeseiten_child_patterns = [
+            'landeseiten',
+            'ls-child',
+            'flavor',  // flavor starter theme
+        ];
+        
+        $current_theme_name = strtolower($theme->get('Name'));
+        $current_stylesheet = strtolower($theme->get_stylesheet());
+        
+        foreach ($landeseiten_child_patterns as $pattern) {
+            if (strpos($current_theme_name, $pattern) !== false || strpos($current_stylesheet, $pattern) !== false) {
+                $child_theme_active = true;
+                $child_theme_name = $theme->get('Name');
+                $child_theme_version = $theme->get('Version');
+                break;
+            }
+        }
+        
+        // Check for Landeseiten Gravity Plugin
+        $gravity_plugin_active = false;
+        $gravity_plugin_version = null;
+        
+        // Look for Landeseiten Gravity plugin in various possible file names
+        $gravity_plugin_patterns = [
+            'landeseiten-gravity',
+            'ls-gravity',
+            'landeseiten_gravity',
+        ];
+        
+        foreach ($all_plugins as $plugin_path => $plugin_data) {
+            $plugin_path_lower = strtolower($plugin_path);
+            $plugin_name_lower = strtolower($plugin_data['Name']);
+            
+            foreach ($gravity_plugin_patterns as $pattern) {
+                if (strpos($plugin_path_lower, $pattern) !== false || strpos($plugin_name_lower, $pattern) !== false) {
+                    // Check if it's active
+                    if (in_array($plugin_path, $active_plugins)) {
+                        $gravity_plugin_active = true;
+                        $gravity_plugin_version = $plugin_data['Version'];
+                    }
+                    break 2;
+                }
+            }
+        }
+        
+        // Calculate if stack is complete
+        $stack_complete = $hello_elementor_active && $child_theme_active && $gravity_plugin_active;
+        
+        return [
+            'stack_complete' => $stack_complete,
+            'hello_elementor' => [
+                'active' => $hello_elementor_active,
+                'version' => $hello_elementor_version,
+            ],
+            'child_theme' => [
+                'active' => $child_theme_active,
+                'name' => $child_theme_name,
+                'version' => $child_theme_version,
+            ],
+            'gravity_plugin' => [
+                'active' => $gravity_plugin_active,
+                'version' => $gravity_plugin_version,
+            ],
+            'issues' => $this->get_stack_issues($hello_elementor_active, $child_theme_active, $gravity_plugin_active),
+        ];
+    }
+    
+    /**
+     * Get stack issues for display
+     */
+    private function get_stack_issues($hello_elementor, $child_theme, $gravity_plugin) {
+        $issues = [];
+        
+        if (!$hello_elementor) {
+            $issues[] = 'Hello Elementor theme not active';
+        }
+        
+        if (!$child_theme) {
+            $issues[] = 'Landeseiten Child Theme not active';
+        }
+        
+        if (!$gravity_plugin) {
+            $issues[] = 'Landeseiten Gravity plugin not active';
+        }
+        
+        return $issues;
     }
     
     /**

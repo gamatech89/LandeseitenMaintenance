@@ -14,6 +14,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\MaintenanceReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -43,23 +44,22 @@ if (app()->environment('local')) {
         Route::get('/health', function (\Illuminate\Http\Request $request) {
             $key = $request->get('key');
             
-            // Simulate invalid key
-            if ($key !== 'test-secret-123') {
-                return response()->json(['error' => 'Invalid key'], 401);
-            }
+            // Use different secret keys to test different scenarios:
+            // test-secret-123     = Healthy site
+            // test-outdated       = Site with outdated plugins
+            // test-error500       = 500 Internal Server Error
+            // test-error503       = 503 Service Unavailable
+            // anything else       = Invalid key (401)
             
-            // Simulate different scenarios based on query param
-            $scenario = $request->get('scenario', 'healthy');
-            
-            if ($scenario === 'error500') {
+            if ($key === 'test-error500') {
                 abort(500, 'Internal Server Error');
             }
             
-            if ($scenario === 'error503') {
+            if ($key === 'test-error503') {
                 abort(503, 'Service Unavailable');
             }
             
-            if ($scenario === 'outdated') {
+            if ($key === 'test-outdated') {
                 return response()->json([
                     'status' => 'warning',
                     'wordpress' => ['version' => '5.9.0'],
@@ -79,27 +79,46 @@ if (app()->environment('local')) {
                     'security' => ['debug_mode' => true, 'file_editing_disabled' => false],
                     'disk' => ['free_space' => '2.5 GB', 'total_space' => '10 GB'],
                     'performance' => ['memory_usage' => '128 MB'],
+                    'landeseiten_stack' => [
+                        'stack_complete' => false,
+                        'hello_elementor' => ['active' => false, 'version' => null],
+                        'child_theme' => ['active' => false, 'name' => null, 'version' => null],
+                        'gravity_plugin' => ['active' => false, 'version' => null],
+                        'issues' => ['Hello Elementor theme not active', 'Landeseiten Child Theme not active', 'Landeseiten Gravity plugin not active'],
+                    ],
                 ]);
             }
             
-            // Default: healthy site
-            return response()->json([
-                'status' => 'ok',
-                'wordpress' => ['version' => '6.4.2'],
-                'php' => ['version' => '8.2.14'],
-                'plugins' => [
-                    'total_count' => 12,
-                    'active_count' => 10,
-                    'outdated_count' => 0,
-                    'outdated_plugins' => [],
-                ],
-                'theme' => ['name' => 'Flavor starter theme flavorkids flavor kids', 'version' => '2.1.0', 'update_available' => false],
-                'ssl' => ['enabled' => true],
-                'updates' => ['core_update_available' => false],
-                'security' => ['debug_mode' => false, 'file_editing_disabled' => true],
-                'disk' => ['free_space' => '15.2 GB', 'total_space' => '20 GB'],
-                'performance' => ['memory_usage' => '64 MB'],
-            ]);
+            if ($key === 'test-secret-123') {
+                // Default: healthy site with complete stack
+                return response()->json([
+                    'status' => 'ok',
+                    'wordpress' => ['version' => '6.4.2'],
+                    'php' => ['version' => '8.2.14'],
+                    'plugins' => [
+                        'total_count' => 12,
+                        'active_count' => 10,
+                        'outdated_count' => 0,
+                        'outdated_plugins' => [],
+                    ],
+                    'theme' => ['name' => 'flavor starter theme flavorkids', 'version' => '2.1.0', 'update_available' => false],
+                    'ssl' => ['enabled' => true],
+                    'updates' => ['core_update_available' => false],
+                    'security' => ['debug_mode' => false, 'file_editing_disabled' => true],
+                    'disk' => ['free_space' => '15.2 GB', 'total_space' => '20 GB'],
+                    'performance' => ['memory_usage' => '64 MB'],
+                    'landeseiten_stack' => [
+                        'stack_complete' => true,
+                        'hello_elementor' => ['active' => true, 'version' => '3.0.1'],
+                        'child_theme' => ['active' => true, 'name' => 'flavor starter theme flavorkids', 'version' => '2.1.0'],
+                        'gravity_plugin' => ['active' => true, 'version' => '1.2.0'],
+                        'issues' => [],
+                    ],
+                ]);
+            }
+            
+            // Invalid key
+            return response()->json(['error' => 'Invalid key'], 401);
         });
         
         Route::get('/ping', function () {
@@ -142,6 +161,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/projects/{project}/todos/{todo}', [TodoController::class, 'update'])->name('todos.update');
     Route::delete('/projects/{project}/todos/{todo}', [TodoController::class, 'destroy'])->name('todos.destroy');
     Route::get('/projects/{project}/todos/{todo}/download', [TodoController::class, 'download'])->name('todos.download');
+    
+    // Maintenance Reports (nested under projects)
+    Route::post('/projects/{project}/maintenance-reports', [MaintenanceReportController::class, 'store'])->name('maintenance-reports.store');
+    Route::put('/projects/{project}/maintenance-reports/{report}', [MaintenanceReportController::class, 'update'])->name('maintenance-reports.update');
+    Route::delete('/projects/{project}/maintenance-reports/{report}', [MaintenanceReportController::class, 'destroy'])->name('maintenance-reports.destroy');
+    Route::get('/projects/{project}/maintenance-reports/{report}/pdf', [MaintenanceReportController::class, 'downloadPdf'])->name('maintenance-reports.pdf');
+    
+    // Maintenance Reports API (suggestions for autocomplete)
+    Route::get('/api/maintenance-reports/suggestions', [MaintenanceReportController::class, 'suggestions'])->name('api.maintenance-reports.suggestions');
     
     // Vault (global credentials view)
     Route::get('/vault', [VaultController::class, 'index'])->name('vault.index');

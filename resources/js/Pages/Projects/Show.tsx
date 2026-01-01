@@ -57,11 +57,13 @@ import {
     SafetyOutlined,
     SettingOutlined,
     SyncOutlined,
+    FileTextOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { usePage } from "@inertiajs/react";
+import MaintenanceReportsTab from "@/Components/MaintenanceReportsTab";
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -100,8 +102,10 @@ interface Todo {
     title: string;
     description: string;
     completed: boolean;
+    status: "pending" | "in_progress" | "completed";
     priority: number;
     due_date: string;
+    completed_at?: string;
     file_path: string | null;
     file_name: string | null;
     assignee_id: number | null;
@@ -158,6 +162,14 @@ interface Project {
         security?: { debug_mode: boolean; file_editing_disabled: boolean };
         disk?: { free_space?: string; total_space?: string };
         performance?: { memory_usage?: string };
+        // Landeseiten Stack
+        landeseiten_stack?: {
+            stack_complete: boolean;
+            hello_elementor: { active: boolean; version?: string };
+            child_theme: { active: boolean; name?: string; version?: string };
+            gravity_plugin: { active: boolean; version?: string };
+            issues?: string[];
+        };
         // Error response fields
         error?: boolean;
         error_type?: "http_error" | "connection_error";
@@ -173,8 +185,27 @@ interface User {
     role?: string;
 }
 
+interface MaintenanceReport {
+    id: number;
+    project_id: number;
+    user_id: number;
+    report_date: string;
+    type: "monthly" | "weekly" | "ad-hoc";
+    summary: string;
+    tasks_completed?: string[];
+    updates_performed?: string[];
+    issues_found?: string[];
+    issues_resolved?: string[];
+    notes?: string;
+    time_spent_minutes?: number;
+    user?: User;
+    created_at: string;
+    updated_at: string;
+}
+
 interface ProjectShowProps {
     project: Project;
+    maintenanceReports: MaintenanceReport[];
     users: User[];
     managers: User[];
     developers: User[];
@@ -182,6 +213,7 @@ interface ProjectShowProps {
 
 export default function ProjectShow({
     project,
+    maintenanceReports,
     users,
     managers,
     developers,
@@ -2304,6 +2336,62 @@ export default function ProjectShow({
                                                         </Card>
                                                     </Col>
 
+                                                    {/* Landeseiten Stack */}
+                                                    {project.last_health_details
+                                                        .landeseiten_stack && (
+                                                        <Col xs={24} sm={12} lg={8}>
+                                                            <Card
+                                                                size="small"
+                                                                title={
+                                                                    <Space>
+                                                                        <span>Landeseiten Stack</span>
+                                                                        {project.last_health_details.landeseiten_stack.stack_complete ? (
+                                                                            <Tag color="success">Complete</Tag>
+                                                                        ) : (
+                                                                            <Tag color="warning">Incomplete</Tag>
+                                                                        )}
+                                                                    </Space>
+                                                                }
+                                                            >
+                                                                <Space direction="vertical" style={{ width: '100%' }}>
+                                                                    <div>
+                                                                        {project.last_health_details.landeseiten_stack.hello_elementor.active ? (
+                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
+                                                                                Hello Elementor {project.last_health_details.landeseiten_stack.hello_elementor.version}
+                                                                            </Tag>
+                                                                        ) : (
+                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
+                                                                                Hello Elementor Missing
+                                                                            </Tag>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        {project.last_health_details.landeseiten_stack.child_theme.active ? (
+                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
+                                                                                {project.last_health_details.landeseiten_stack.child_theme.name || 'Child Theme'} {project.last_health_details.landeseiten_stack.child_theme.version}
+                                                                            </Tag>
+                                                                        ) : (
+                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
+                                                                                LS Child Theme Missing
+                                                                            </Tag>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        {project.last_health_details.landeseiten_stack.gravity_plugin.active ? (
+                                                                            <Tag color="success" icon={<CheckCircleOutlined />}>
+                                                                                LS Gravity {project.last_health_details.landeseiten_stack.gravity_plugin.version}
+                                                                            </Tag>
+                                                                        ) : (
+                                                                            <Tag color="error" icon={<CloseCircleOutlined />}>
+                                                                                LS Gravity Missing
+                                                                            </Tag>
+                                                                        )}
+                                                                    </div>
+                                                                </Space>
+                                                            </Card>
+                                                        </Col>
+                                                    )}
+
                                                     {/* Performance */}
                                                     <Col xs={24} sm={12} lg={8}>
                                                         <Card
@@ -2503,6 +2591,28 @@ export default function ProjectShow({
                                             </div>
                                         )}
                                     </div>
+                                ),
+                            },
+                            {
+                                key: "reports",
+                                label: (
+                                    <Badge
+                                        count={maintenanceReports?.length || 0}
+                                        offset={[10, 0]}
+                                        size="small"
+                                    >
+                                        <span>
+                                            <FileTextOutlined /> Reports
+                                        </span>
+                                    </Badge>
+                                ),
+                                children: (
+                                    <MaintenanceReportsTab
+                                        projectId={project.id}
+                                        reports={maintenanceReports || []}
+                                        todos={project.todos || []}
+                                        canUpdate={isAdmin || isManager}
+                                    />
                                 ),
                             },
                         ]}

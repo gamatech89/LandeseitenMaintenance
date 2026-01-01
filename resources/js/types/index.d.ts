@@ -218,3 +218,33 @@ export interface ActivityLog {
     created_at: string;
     causer?: User;
 }
+
+// ============================================
+// MAINTENANCE REPORT TYPES
+// ============================================
+export type MaintenanceReportType = "monthly" | "weekly" | "ad-hoc";
+
+export interface UpdatePerformed {
+    name: string;
+    from_version?: string;
+    to_version?: string;
+}
+
+export interface MaintenanceReport {
+    id: number;
+    project_id: number;
+    user_id: number;
+    report_date: string;
+    type: MaintenanceReportType;
+    summary: string;
+    tasks_completed?: string[];
+    updates_performed?: UpdatePerformed[];
+    issues_found?: string[];
+    issues_resolved?: string[];
+    notes?: string;
+    time_spent_minutes?: number;
+    time_spent_formatted?: string;
+    user?: User;
+    created_at: string;
+    updated_at: string;
+}
