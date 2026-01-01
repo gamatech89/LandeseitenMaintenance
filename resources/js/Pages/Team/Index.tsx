@@ -265,7 +265,11 @@ export default function Index({ users, filters, allProjects, flash }: Props) {
                             style={{ padding: "4px 8px" }}
                             title="Manage developer assignments"
                         >
-                            <Badge count={record.assigned_projects_count} showZero color="#52c41a">
+                            <Badge
+                                count={record.assigned_projects_count}
+                                showZero
+                                color="#52c41a"
+                            >
                                 <CodeOutlined style={{ fontSize: 18 }} />
                             </Badge>
                             <SettingOutlined
@@ -287,7 +291,11 @@ export default function Index({ users, filters, allProjects, flash }: Props) {
                             style={{ padding: "4px 8px" }}
                             title="Manage PM assignments"
                         >
-                            <Badge count={record.managed_projects_count} showZero color="#6c1e9f">
+                            <Badge
+                                count={record.managed_projects_count}
+                                showZero
+                                color="#6c1e9f"
+                            >
                                 <ProjectOutlined style={{ fontSize: 18 }} />
                             </Badge>
                             <SettingOutlined

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- Hostinger hosting account (Business or Premium plan recommended)
-- Domain configured in Hostinger
-- SSH access enabled (recommended)
-- Local project fully tested
+-   Hostinger hosting account (Business or Premium plan recommended)
+-   Domain configured in Hostinger
+-   SSH access enabled (recommended)
+-   Local project fully tested
 
 ---
 
@@ -75,9 +75,9 @@ php artisan view:clear
 1. Log into **Hostinger hPanel**
 2. Navigate to **Databases → MySQL Databases**
 3. Create a new database:
-   - Database name: `u123456789_lsm` (prefix is auto-added)
-   - Username: `u123456789_lsmuser`
-   - Password: Generate a strong password
+    - Database name: `u123456789_lsm` (prefix is auto-added)
+    - Username: `u123456789_lsmuser`
+    - Password: Generate a strong password
 4. **Save these credentials** - you'll need them for `.env`
 
 ---
@@ -110,14 +110,14 @@ return new class extends Migration
     {
         // MySQL 8.0.16+ supports CHECK constraints natively
         // For older versions, use ENUM or triggers
-        
+
         // If using MySQL 8.0.16+, constraints work automatically
         // If using older MySQL, modify the columns to use ENUM:
-        
+
         if (DB::connection()->getDriverName() === 'mysql') {
             // Check MySQL version
             $version = DB::select('SELECT VERSION() as version')[0]->version;
-            
+
             if (version_compare($version, '8.0.16', '<')) {
                 // For older MySQL, use triggers or application-level validation
                 // The application already validates these values
@@ -163,9 +163,9 @@ zip -r ../lsm-deploy.zip .
 ```
 
 2. **Upload via hPanel File Manager**:
-   - Navigate to File Manager → `public_html`
-   - Upload `lsm-deploy.zip`
-   - Extract the archive
+    - Navigate to File Manager → `public_html`
+    - Upload `lsm-deploy.zip`
+    - Extract the archive
 
 ### Option B: Using SSH + Git (Recommended)
 
@@ -347,20 +347,20 @@ For Laravel's scheduler, add a cron job in hPanel → Advanced → Cron Jobs:
 
 ## Deployment Checklist
 
-- [ ] Database created on Hostinger MySQL
-- [ ] `.env` configured with production values
-- [ ] `APP_DEBUG=false` in production
-- [ ] `APP_ENV=production`
-- [ ] Frontend built (`npm run build`)
-- [ ] Files uploaded to server
-- [ ] Composer dependencies installed (`--no-dev`)
-- [ ] Storage permissions set (755/775)
-- [ ] Application key generated
-- [ ] Database migrations run
-- [ ] Production seeder run
-- [ ] Config/routes/views cached
-- [ ] SSL certificate installed
-- [ ] Force HTTPS enabled
+-   [ ] Database created on Hostinger MySQL
+-   [ ] `.env` configured with production values
+-   [ ] `APP_DEBUG=false` in production
+-   [ ] `APP_ENV=production`
+-   [ ] Frontend built (`npm run build`)
+-   [ ] Files uploaded to server
+-   [ ] Composer dependencies installed (`--no-dev`)
+-   [ ] Storage permissions set (755/775)
+-   [ ] Application key generated
+-   [ ] Database migrations run
+-   [ ] Production seeder run
+-   [ ] Config/routes/views cached
+-   [ ] SSL certificate installed
+-   [ ] Force HTTPS enabled
 
 ---
 
@@ -451,14 +451,14 @@ echo "✅ Deployment complete!"
 
 1. Visit `https://yourdomain.com` - should see login page
 2. Log in with:
-   - Email: `admin@landeseiten.de`
-   - Password: *(the SEED_PASSWORD you set in .env)*
+    - Email: `admin@landeseiten.de`
+    - Password: _(the SEED_PASSWORD you set in .env)_
 3. Test all major features:
-   - [ ] Projects list loads
-   - [ ] Team page works
-   - [ ] Credentials (create/view)
-   - [ ] Todos functionality
-   - [ ] Notifications
+    - [ ] Projects list loads
+    - [ ] Team page works
+    - [ ] Credentials (create/view)
+    - [ ] Todos functionality
+    - [ ] Notifications
 
 ---
 
@@ -475,16 +475,17 @@ echo "✅ Deployment complete!"
 
 ## Hostinger-Specific Notes
 
-- **PHP Version**: Ensure PHP 8.2+ is selected in hPanel → Advanced → PHP Configuration
-- **PHP Extensions**: Enable `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`
-- **Memory Limit**: Set to at least 256M in PHP Configuration
-- **Max Execution Time**: Set to 300 seconds for migrations
+-   **PHP Version**: Ensure PHP 8.2+ is selected in hPanel → Advanced → PHP Configuration
+-   **PHP Extensions**: Enable `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`
+-   **Memory Limit**: Set to at least 256M in PHP Configuration
+-   **Max Execution Time**: Set to 300 seconds for migrations
 
 ---
 
 ## Support
 
 For issues, check:
+
 1. Laravel logs: `storage/logs/laravel.log`
 2. PHP error logs in Hostinger hPanel
 3. Hostinger support chat (24/7)
