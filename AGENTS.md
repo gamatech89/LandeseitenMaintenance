@@ -9,22 +9,25 @@ LSM is a web application for managing website maintenance projects, credentials,
 ## Tech Stack
 
 ### Backend
-- **Framework**: Laravel 12 (PHP 8.2+)
-- **Database**: MySQL (production), SQLite (local development)
-- **Authentication**: Laravel Breeze with Inertia.js
-- **Server-Side Rendering**: Inertia.js
+
+-   **Framework**: Laravel 12 (PHP 8.2+)
+-   **Database**: MySQL (production), SQLite (local development)
+-   **Authentication**: Laravel Breeze with Inertia.js
+-   **Server-Side Rendering**: Inertia.js
 
 ### Frontend
-- **Framework**: React 18 with TypeScript
-- **UI Library**: Ant Design v5
-- **Styling**: Tailwind CSS
-- **Build Tool**: Vite 7
+
+-   **Framework**: React 18 with TypeScript
+-   **UI Library**: Ant Design v5
+-   **Styling**: Tailwind CSS
+-   **Build Tool**: Vite 7
 
 ### Key Packages
-- `inertiajs/inertia-laravel` - Server-side adapter
-- `@inertiajs/react` - Client-side React adapter
-- `antd` - UI components
-- `@ant-design/icons` - Icon library
+
+-   `inertiajs/inertia-laravel` - Server-side adapter
+-   `@inertiajs/react` - Client-side React adapter
+-   `antd` - UI components
+-   `@ant-design/icons` - Icon library
 
 ## Project Structure
 
@@ -59,38 +62,45 @@ LSM is a web application for managing website maintenance projects, credentials,
 ## Key Models & Relationships
 
 ### User
-- Roles: `admin`, `manager`, `developer`
-- Can manage projects (as manager)
-- Can be assigned to projects (as developer)
+
+-   Roles: `admin`, `manager`, `developer`
+-   Can manage projects (as manager)
+-   Can be assigned to projects (as developer)
 
 ### Project
-- Has many: credentials, resources, todos
-- Belongs to many: tags, developers (users)
-- Cascade deletes: When deleted, all credentials, resources, todos are deleted, and tag/developer associations are detached
+
+-   Has many: credentials, resources, todos
+-   Belongs to many: tags, developers (users)
+-   Cascade deletes: When deleted, all credentials, resources, todos are deleted, and tag/developer associations are detached
 
 ### Credential
-- Types: `wordpress`, `hosting`, `database`, `email`, `ssh`, `ftp`, `api`, `other`
-- Passwords are encrypted
-- Can have share links for temporary access
+
+-   Types: `wordpress`, `hosting`, `database`, `email`, `ssh`, `ftp`, `api`, `other`
+-   Passwords are encrypted
+-   Can have share links for temporary access
 
 ### Todo
-- Statuses: `pending`, `in_progress`, `completed`
-- Can have file attachments
-- Can be assigned to a developer
+
+-   Statuses: `pending`, `in_progress`, `completed`
+-   Can have file attachments
+-   Can be assigned to a developer
 
 ### Resource
-- Types: `document`, `image`, `link`, `note`
-- Stores files or URLs related to projects
+
+-   Types: `document`, `image`, `link`, `note`
+-   Stores files or URLs related to projects
 
 ## Database Configuration
 
 ### Local Development (SQLite)
+
 ```env
 DB_CONNECTION=sqlite
 # DB_DATABASE is automatically set to database/database.sqlite
 ```
 
 ### Production (MySQL)
+
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -101,7 +111,9 @@ DB_PASSWORD=your_password
 ```
 
 ### Seeder Compatibility
+
 The seeders handle both SQLite and MySQL:
+
 ```php
 $driver = DB::getDriverName();
 if ($driver === 'sqlite') {
@@ -114,12 +126,14 @@ if ($driver === 'sqlite') {
 ## Deployment Setup (Hostinger Shared Hosting)
 
 ### Server Details
-- **Provider**: Hostinger Shared Hosting
-- **Domain**: landeseitenmaintenance.site
-- **SSH Access**: `u176148229@fr-int-web1703`
-- **App Location**: `~/domains/landeseitenmaintenance.site/LandeseitenMaintenance/`
+
+-   **Provider**: Hostinger Shared Hosting
+-   **Domain**: landeseitenmaintenance.site
+-   **SSH Access**: `u176148229@fr-int-web1703`
+-   **App Location**: `~/domains/landeseitenmaintenance.site/LandeseitenMaintenance/`
 
 ### Directory Structure on Server
+
 ```
 ~/domains/landeseitenmaintenance.site/
 ├── public_html -> LandeseitenMaintenance/public  (symlink!)
@@ -132,7 +146,9 @@ if ($driver === 'sqlite') {
 ```
 
 ### Critical: Symlink Setup
+
 Hostinger serves from `public_html`, but Laravel's entry point is `public/`. The solution:
+
 ```bash
 cd ~/domains/landeseitenmaintenance.site/
 rm -rf public_html
@@ -140,12 +156,15 @@ ln -s LandeseitenMaintenance/public public_html
 ```
 
 ### Why Build Files Are Committed
+
 The server has **no Node.js**, so we cannot run `npm run build` there. Frontend assets are:
+
 1. Built locally with `npm run build`
 2. Committed to git in `public/build/`
 3. Pushed and pulled on the server
 
 ### Deployment Workflow
+
 ```bash
 # Local machine
 npm run build
@@ -163,15 +182,19 @@ php artisan view:cache
 ```
 
 ### Storage Link
+
 For file uploads to work:
+
 ```bash
 php artisan storage:link
 ```
+
 This creates `public/storage -> storage/app/public`
 
 ## Development Workflow
 
 ### Starting Development Server
+
 ```bash
 # Terminal 1: Laravel backend
 php artisan serve
@@ -181,11 +204,13 @@ npm run dev
 ```
 
 ### Building for Production
+
 ```bash
 npm run build
 ```
 
 ### Running Tests
+
 ```bash
 php artisan test
 # or
@@ -193,6 +218,7 @@ php artisan test
 ```
 
 ### Database Commands
+
 ```bash
 # Fresh migration with seeding
 php artisan migrate:fresh --seed
@@ -203,29 +229,33 @@ php artisan db:seed --class=ProductionSeeder
 
 ## Important Routes
 
-| Route | Controller | Description |
-|-------|------------|-------------|
-| `/` | DashboardController | Dashboard with stats |
-| `/projects` | ProjectController | Project CRUD |
+| Route            | Controller             | Description               |
+| ---------------- | ---------------------- | ------------------------- |
+| `/`              | DashboardController    | Dashboard with stats      |
+| `/projects`      | ProjectController      | Project CRUD              |
 | `/projects/{id}` | ProjectController@show | Project details with tabs |
-| `/vault` | VaultController | Global credentials view |
-| `/users` | UserController | User management (admin) |
-| `/activity` | ActivityController | Activity log |
+| `/vault`         | VaultController        | Global credentials view   |
+| `/users`         | UserController         | User management (admin)   |
+| `/activity`      | ActivityController     | Activity log              |
 
 ## Authentication & Authorization
 
 ### Roles
-- **Admin**: Full access to everything
-- **Manager**: Can manage assigned projects and their team
-- **Developer**: Can access assigned projects only
+
+-   **Admin**: Full access to everything
+-   **Manager**: Can manage assigned projects and their team
+-   **Developer**: Can access assigned projects only
 
 ### Policies
+
 Each model has a policy in `app/Policies/` that controls:
-- `viewAny`, `view`, `create`, `update`, `delete`
+
+-   `viewAny`, `view`, `create`, `update`, `delete`
 
 ## Environment Variables
 
 ### Required
+
 ```env
 APP_NAME="LSM"
 APP_ENV=production
@@ -250,12 +280,14 @@ MAIL_FROM_ADDRESS=noreply@landeseitenmaintenance.site
 ## Common Tasks
 
 ### Adding a New Page
+
 1. Create controller method in `app/Http/Controllers/`
 2. Add route in `routes/web.php`
 3. Create React component in `resources/js/Pages/`
 4. Use `Inertia::render('PageName', $data)` in controller
 
 ### Adding a New Model
+
 1. Create migration: `php artisan make:migration create_xxx_table`
 2. Create model: `php artisan make:model Xxx`
 3. Create factory: `php artisan make:factory XxxFactory`
@@ -263,6 +295,7 @@ MAIL_FROM_ADDRESS=noreply@landeseitenmaintenance.site
 5. Register policy in `AppServiceProvider`
 
 ### Modifying Frontend
+
 1. Make changes in `resources/js/`
 2. Run `npm run build`
 3. Commit build files
@@ -270,27 +303,31 @@ MAIL_FROM_ADDRESS=noreply@landeseitenmaintenance.site
 
 ## GitHub Repository
 
-- **URL**: https://github.com/gamatech89/LandeseitenMaintenance
-- **Branch**: main
+-   **URL**: https://github.com/gamatech89/LandeseitenMaintenance
+-   **Branch**: main
 
 ## Troubleshooting
 
 ### "Mix manifest not found" or blank page
-- Ensure `public/build/manifest.json` exists
-- Run `npm run build` locally and commit
+
+-   Ensure `public/build/manifest.json` exists
+-   Run `npm run build` locally and commit
 
 ### Permissions issues on server
+
 ```bash
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 ```
 
 ### Database connection refused
-- Check `.env` database credentials
-- Ensure MySQL service is running
-- Verify database exists
+
+-   Check `.env` database credentials
+-   Ensure MySQL service is running
+-   Verify database exists
 
 ### Symlink broken
+
 ```bash
 cd ~/domains/landeseitenmaintenance.site/
 rm public_html
@@ -299,7 +336,72 @@ ln -s LandeseitenMaintenance/public public_html
 
 ## Recent Features
 
-- **Cascading Deletes**: When a project is deleted, all related credentials, resources, todos, and associations are automatically deleted
-- **Vault Credential Deletion**: Admins can delete credentials directly from the Vault page
-- **Maintenance Init Todos**: Option to automatically create standard maintenance todos when creating a new project
-- **Secure Credential Sharing**: Generate temporary, expiring links to share credentials externally
+-   **Cascading Deletes**: When a project is deleted, all related credentials, resources, todos, and associations are automatically deleted
+-   **Vault Credential Deletion**: Admins can delete credentials directly from the Vault page
+-   **Maintenance Init Todos**: Option to automatically create standard maintenance todos when creating a new project
+-   **Secure Credential Sharing**: Generate temporary, expiring links to share credentials externally
+
+## WordPress Plugin (LSM Health Monitor)
+
+A WordPress plugin that allows LSM to monitor client websites remotely.
+
+### Location
+
+```
+wordpress-plugin/lsm-health-monitor/
+├── lsm-health-monitor.php    # Main plugin file
+├── uninstall.php             # Cleanup on uninstall
+├── readme.txt                # WordPress plugin readme
+├── templates/
+│   └── admin-page.php        # Settings page template
+└── assets/
+    ├── css/admin.css         # Admin styles
+    └── js/admin.js           # Admin JavaScript
+```
+
+### Features
+
+-   **Secure REST API Endpoint**: `/wp-json/lsm/v1/health?key=SECRET`
+-   **License Validation**: Requires valid license key to function
+-   **Health Data Collection**:
+    -   WordPress, PHP, MySQL versions
+    -   Plugin status (total, active, outdated)
+    -   Theme info and update status
+    -   SSL/HTTPS status
+    -   Security configuration
+    -   Disk and memory usage
+-   **Admin Settings Page**: Settings > LSM Health Monitor
+-   **Secret Key Management**: Auto-generated, can be regenerated
+
+### Installation on Client Sites
+
+1. Upload `lsm-health-monitor` folder to `/wp-content/plugins/`
+2. Activate the plugin
+3. Go to Settings > LSM Health Monitor
+4. Enter license key from LSM dashboard
+5. Copy secret key to the project in LSM
+
+### API Endpoints
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `/wp-json/lsm/v1/ping` | None | Basic availability check |
+| `/wp-json/lsm/v1/status` | Secret + License | Quick status info |
+| `/wp-json/lsm/v1/health` | Secret + License | Full health data |
+
+### License Validation
+
+The plugin validates licenses against the LSM server at `LSM_SERVER_URL`. For development, add to wp-config.php:
+
+```php
+define('LSM_DEV_MODE', true);
+```
+
+This accepts any license key starting with `LSM-`.
+
+### Building a Distributable ZIP
+
+```bash
+cd wordpress-plugin
+zip -r lsm-health-monitor.zip lsm-health-monitor -x "*.DS_Store"
+```

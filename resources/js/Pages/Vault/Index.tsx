@@ -103,7 +103,7 @@ export default function Index({
         auth: { user: { name: string; role: string } };
     };
     const isAdmin = auth.user.role === "admin";
-    
+
     const [visiblePasswords, setVisiblePasswords] = useState<
         Record<number, boolean>
     >({});
