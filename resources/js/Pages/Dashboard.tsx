@@ -461,6 +461,14 @@ export default function Dashboard({ stats, recentIssues }: DashboardProps) {
                                 >
                                     {stats.total}
                                 </Title>
+                                <Text
+                                    style={{
+                                        color: "rgba(255,255,255,0.7)",
+                                        fontSize: 12,
+                                    }}
+                                >
+                                    All managed sites
+                                </Text>
                             </div>
                             <FolderOutlined className="stat-card-icon" />
                         </Card>

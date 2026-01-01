@@ -86,6 +86,12 @@ interface ProjectsIndexProps {
     users: User[];
     managers: User[];
     developers: User[];
+    stats: {
+        total: number;
+        online: number;
+        secure: number;
+        issues: number;
+    };
 }
 
 export default function ProjectsIndex({
@@ -94,6 +100,7 @@ export default function ProjectsIndex({
     users,
     managers,
     developers,
+    stats,
 }: ProjectsIndexProps) {
     const { flash, auth } = usePage().props as {
         flash: { success?: string; error?: string };
@@ -525,7 +532,7 @@ export default function ProjectsIndex({
                                         Total Projects
                                     </Text>
                                 }
-                                value={projects.total}
+                                value={stats.total}
                                 prefix={
                                     <FolderOutlined
                                         style={{ color: "#6c1e9f" }}
@@ -549,11 +556,7 @@ export default function ProjectsIndex({
                                         Online
                                     </Text>
                                 }
-                                value={
-                                    projects.data.filter(
-                                        (p) => p.health_status === "online"
-                                    ).length
-                                }
+                                value={stats.online}
                                 prefix={
                                     <CheckCircleOutlined
                                         style={{ color: "#10b981" }}
@@ -577,11 +580,7 @@ export default function ProjectsIndex({
                                         Secure
                                     </Text>
                                 }
-                                value={
-                                    projects.data.filter(
-                                        (p) => p.security_status === "secure"
-                                    ).length
-                                }
+                                value={stats.secure}
                                 prefix={
                                     <LockOutlined
                                         style={{ color: "#06b6d4" }}
@@ -605,14 +604,7 @@ export default function ProjectsIndex({
                                         Issues
                                     </Text>
                                 }
-                                value={
-                                    projects.data.filter(
-                                        (p) =>
-                                            p.health_status === "offline" ||
-                                            p.health_status === "down_error" ||
-                                            p.security_status === "hacked"
-                                    ).length
-                                }
+                                value={stats.issues}
                                 prefix={
                                     <WarningOutlined
                                         style={{ color: "#ef4444" }}

@@ -85,6 +85,17 @@ class ProjectController extends Controller
         // Get all tags for filtering
         $tags = Tag::orderBy('name')->get();
 
+        // Calculate overall stats (not affected by filters)
+        $stats = [
+            'total' => Project::count(),
+            'online' => Project::where('health_status', 'online')->count(),
+            'secure' => Project::where('security_status', 'secure')->count(),
+            'issues' => Project::where(function($q) {
+                $q->whereIn('health_status', ['offline', 'down_error'])
+                  ->orWhereIn('security_status', ['hacked', 'compromised']);
+            })->count(),
+        ];
+
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
             'filters' => $request->only(['health', 'security', 'search', 'manager_id', 'developer_id', 'tag']),
@@ -92,6 +103,7 @@ class ProjectController extends Controller
             'managers' => $managers,
             'developers' => $developers,
             'tags' => $tags,
+            'stats' => $stats,
         ]);
     }
 
