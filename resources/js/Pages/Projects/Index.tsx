@@ -20,6 +20,7 @@ import {
     Statistic,
     Empty,
     Spin,
+    Checkbox,
 } from "antd";
 import {
     CheckCircleOutlined,
@@ -1012,6 +1013,22 @@ export default function ProjectsIndex({
 
                     <Form.Item name="notes" label="Notes">
                         <TextArea rows={4} placeholder="Project notes..." />
+                    </Form.Item>
+
+                    <Divider orientation="left">Initialization</Divider>
+
+                    <Form.Item
+                        name="add_maintenance_todos"
+                        valuePropName="checked"
+                    >
+                        <Checkbox>
+                            <Space>
+                                <span>Add Maintenance Init Todos</span>
+                                <Tooltip title="Creates standard maintenance checklist: Wordfence check, theme verification, form plugin check, database inspection, malicious files scan">
+                                    <span style={{ color: '#8b5cf6', cursor: 'help' }}>ⓘ</span>
+                                </Tooltip>
+                            </Space>
+                        </Checkbox>
                     </Form.Item>
                 </Form>
             </Modal>

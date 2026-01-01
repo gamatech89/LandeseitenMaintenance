@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Tag;
+use App\Models\Todo;
 use App\Models\User;
 use App\Notifications\ProjectAssignedNotification;
 use App\Notifications\ProjectStatusChangedNotification;
@@ -182,12 +183,14 @@ class ProjectController extends Controller
             'maintenance_id' => 'nullable|string|max:255',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:tags,id',
+            'add_maintenance_todos' => 'nullable|boolean',
         ]);
 
-        // Extract tag_ids and developer_ids before creating project
+        // Extract tag_ids, developer_ids, and maintenance todos flag before creating project
         $tagIds = $validated['tag_ids'] ?? [];
         $developerIds = $validated['developer_ids'] ?? [];
-        unset($validated['tag_ids'], $validated['developer_ids']);
+        $addMaintenanceTodos = $validated['add_maintenance_todos'] ?? false;
+        unset($validated['tag_ids'], $validated['developer_ids'], $validated['add_maintenance_todos']);
 
         $project = Project::create($validated);
 
@@ -214,6 +217,26 @@ class ProjectController extends Controller
         if ($project->developer_id) {
             $developer = User::find($project->developer_id);
             $developer?->notify(new ProjectAssignedNotification($project, 'developer'));
+        }
+
+        // Create maintenance init todos if requested
+        if ($addMaintenanceTodos) {
+            $maintenanceTodos = [
+                ['title' => 'Check if Wordfence is installed', 'priority' => 'critical'],
+                ['title' => 'Check if our new theme is installed', 'priority' => 'high'],
+                ['title' => 'Check if new plugin for forms is installed', 'priority' => 'high'],
+                ['title' => 'Check if database is clean', 'priority' => 'critical'],
+                ['title' => 'Check if malicious files on server/file system', 'priority' => 'critical'],
+            ];
+
+            foreach ($maintenanceTodos as $todo) {
+                Todo::create([
+                    'project_id' => $project->id,
+                    'title' => $todo['title'],
+                    'priority' => $todo['priority'],
+                    'status' => 'pending',
+                ]);
+            }
         }
 
         return redirect()->route('projects.show', $project)
