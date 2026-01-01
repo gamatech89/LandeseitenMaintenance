@@ -103,6 +103,26 @@ class VaultController extends Controller
     }
 
     /**
+     * Delete a credential (admin only).
+     */
+    public function destroy(Request $request, Credential $credential)
+    {
+        $user = $request->user();
+        
+        // Only admins can delete credentials from vault
+        if (!$user->isAdmin()) {
+            abort(403, 'Only administrators can delete credentials from the vault.');
+        }
+
+        // Also delete any share links associated with this credential
+        $credential->shareLinks()->delete();
+        
+        $credential->delete();
+
+        return back()->with('success', 'Credential deleted successfully!');
+    }
+
+    /**
      * Get project IDs that the user has access to.
      */
     private function getAccessibleProjectIds($user): array

@@ -1,0 +1,1 @@
+import{r as e,x as o}from"./app-Dz8_rReg.js";import{D as n}from"./EditOutlined-CB820MrJ.js";import{I as a}from"./compact-item-qIt30OdG.js";var i=function(r,t){return e.createElement(a,o({},r,{ref:t,icon:n}))},c=e.forwardRef(i);export{c as R};

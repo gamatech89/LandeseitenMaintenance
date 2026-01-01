@@ -66,6 +66,15 @@ class Project extends Model
             }
         });
 
+        static::deleting(function (Project $project) {
+            // Cascade delete related records
+            $project->credentials()->delete();
+            $project->resources()->delete();
+            $project->todos()->delete();
+            $project->tags()->detach();
+            $project->developers()->detach();
+        });
+
         static::deleted(function () {
             DashboardController::clearCache();
         });

@@ -65,6 +65,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/vault', [VaultController::class, 'index'])->name('vault.index');
     Route::get('/vault/credentials/{credential}/reveal', [VaultController::class, 'revealPassword'])
         ->name('vault.reveal');
+    Route::delete('/vault/credentials/{credential}', [VaultController::class, 'destroy'])
+        ->name('vault.destroy');
     
     // Activity Log
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity.index');

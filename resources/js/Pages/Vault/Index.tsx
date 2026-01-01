@@ -1,5 +1,5 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, router, Link } from "@inertiajs/react";
+import { Head, router, Link, usePage } from "@inertiajs/react";
 import {
     Card,
     Table,
@@ -18,6 +18,7 @@ import {
     InputNumber,
     Checkbox,
     Result,
+    Popconfirm,
 } from "antd";
 import {
     SearchOutlined,
@@ -38,6 +39,7 @@ import {
     ShareAltOutlined,
     ClockCircleOutlined,
     SafetyOutlined,
+    DeleteOutlined,
 } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -97,6 +99,11 @@ export default function Index({
     filters,
     flash,
 }: Props) {
+    const { auth } = usePage().props as {
+        auth: { user: { name: string; role: string } };
+    };
+    const isAdmin = auth.user.role === "admin";
+    
     const [visiblePasswords, setVisiblePasswords] = useState<
         Record<number, boolean>
     >({});
@@ -307,6 +314,18 @@ export default function Index({
         } catch (error) {
             console.error("Validation failed:", error);
         }
+    };
+
+    const handleDelete = (credential: Credential) => {
+        router.delete(route("vault.destroy", { credential: credential.id }), {
+            preserveScroll: true,
+            onSuccess: () => {
+                message.success("Credential deleted successfully");
+            },
+            onError: () => {
+                message.error("Failed to delete credential");
+            },
+        });
     };
 
     // Share functionality
@@ -547,6 +566,24 @@ export default function Index({
                             onClick={() => handleEdit(record)}
                         />
                     </Tooltip>
+                    {isAdmin && (
+                        <Popconfirm
+                            title="Delete credential"
+                            description="Are you sure you want to delete this credential? This action cannot be undone."
+                            onConfirm={() => handleDelete(record)}
+                            okText="Delete"
+                            cancelText="Cancel"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Tooltip title="Delete credential">
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                />
+                            </Tooltip>
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },
