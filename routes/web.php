@@ -197,17 +197,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
-
-// TEMPORARY: Password reset route - DELETE AFTER USE!
-Route::get('/reset-admin-password/{secret}', function ($secret) {
-    if ($secret !== 'lsm-reset-2026') {
-        abort(404);
-    }
-    $user = \App\Models\User::where('email', 'admin@landeseiten.de')->first();
-    if ($user) {
-        $user->password = \Illuminate\Support\Facades\Hash::make('LsmAdmin2024!');
-        $user->save();
-        return 'Password reset to: LsmAdmin2024! - DELETE THIS ROUTE NOW!';
-    }
-    return 'User not found';
-});
