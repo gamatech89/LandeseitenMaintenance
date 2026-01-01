@@ -138,6 +138,7 @@ interface Project {
     php_version: string | null;
     outdated_plugins_count: number | null;
     last_health_details: {
+        // Success response fields
         status?: string;
         wordpress?: { version: string };
         php?: { version: string };
@@ -148,6 +149,12 @@ interface Project {
         security?: { debug_mode: boolean; file_editing_disabled: boolean };
         disk?: { free_space?: string; total_space?: string };
         performance?: { memory_usage?: string };
+        // Error response fields
+        error?: boolean;
+        error_type?: 'http_error' | 'connection_error';
+        error_code?: number;
+        error_message?: string;
+        checked_at?: string;
     } | null;
 }
 
@@ -1946,6 +1953,54 @@ export default function ProjectShow({
 
                                         {/* Health Details */}
                                         {project.last_health_details ? (
+                                            project.last_health_details.error ? (
+                                                /* Error State */
+                                                <div
+                                                    style={{
+                                                        textAlign: "center",
+                                                        padding: "40px 20px",
+                                                        background: "rgba(255, 77, 79, 0.05)",
+                                                        borderRadius: 12,
+                                                        border: "1px solid rgba(255, 77, 79, 0.2)",
+                                                    }}
+                                                >
+                                                    <CloseCircleOutlined
+                                                        style={{
+                                                            fontSize: 48,
+                                                            color: "#ff4d4f",
+                                                            marginBottom: 16,
+                                                        }}
+                                                    />
+                                                    <Title level={4} type="danger" style={{ marginBottom: 8 }}>
+                                                        Health Check Failed
+                                                    </Title>
+                                                    <Paragraph type="secondary">
+                                                        <Text strong>Error Type: </Text>
+                                                        {project.last_health_details.error_type === 'http_error' 
+                                                            ? `HTTP Error ${project.last_health_details.error_code}`
+                                                            : 'Connection Error'}
+                                                    </Paragraph>
+                                                    <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                                                        <Text strong>Details: </Text>
+                                                        {project.last_health_details.error_message}
+                                                    </Paragraph>
+                                                    {project.last_health_details.checked_at && (
+                                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                                            Last attempt: {dayjs(project.last_health_details.checked_at).format("DD.MM.YYYY HH:mm")}
+                                                        </Text>
+                                                    )}
+                                                    <div style={{ marginTop: 16 }}>
+                                                        <Button
+                                                            type="primary"
+                                                            icon={<SyncOutlined />}
+                                                            onClick={handleCheckHealth}
+                                                            loading={healthCheckLoading}
+                                                        >
+                                                            Retry Health Check
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
                                             <Row gutter={[16, 16]}>
                                                 {/* WordPress Info */}
                                                 <Col xs={24} sm={12} lg={8}>
@@ -2340,6 +2395,7 @@ export default function ProjectShow({
                                                         </Col>
                                                     )}
                                             </Row>
+                                            )
                                         ) : (
                                             <div
                                                 style={{

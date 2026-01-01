@@ -425,23 +425,38 @@ class ProjectController extends Controller
                     'data' => $healthData,
                 ]);
             } else {
-                // API returned error
+                // API returned error (500, 404, 403, etc.)
+                $errorMessage = 'HTTP ' . $response->status();
+                
                 $project->update([
                     'last_health_check_at' => now(),
                     'response_time_ms' => $responseTime,
                     'health_status' => 'down_error',
+                    'last_health_details' => [
+                        'error' => true,
+                        'error_type' => 'http_error',
+                        'error_code' => $response->status(),
+                        'error_message' => $errorMessage,
+                        'checked_at' => now()->toIso8601String(),
+                    ],
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Health check endpoint returned error: ' . $response->status(),
+                    'message' => 'Health check endpoint returned error: ' . $errorMessage,
                 ], 400);
             }
         } catch (\Exception $e) {
-            // Update project as having issues
+            // Connection failed (timeout, DNS error, site down, etc.)
             $project->update([
                 'last_health_check_at' => now(),
                 'health_status' => 'down_error',
+                'last_health_details' => [
+                    'error' => true,
+                    'error_type' => 'connection_error',
+                    'error_message' => $e->getMessage(),
+                    'checked_at' => now()->toIso8601String(),
+                ],
             ]);
 
             return response()->json([
