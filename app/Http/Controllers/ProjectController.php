@@ -373,4 +373,101 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')
             ->with('success', 'Project deleted successfully!');
     }
+
+    /**
+     * Manually trigger a health check for a project.
+     */
+    public function checkHealth(Project $project)
+    {
+        Gate::authorize('update', $project);
+
+        if (empty($project->health_check_secret)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Health monitoring secret not configured',
+            ], 400);
+        }
+
+        if (empty($project->url)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project URL not configured',
+            ], 400);
+        }
+
+        try {
+            $baseUrl = rtrim($project->url, '/');
+            $healthUrl = "{$baseUrl}/wp-json/lsm/v1/health?key={$project->health_check_secret}";
+            
+            $startTime = microtime(true);
+            $response = \Illuminate\Support\Facades\Http::timeout(15)->get($healthUrl);
+            $responseTime = round((microtime(true) - $startTime) * 1000);
+            
+            if ($response->successful()) {
+                $healthData = $response->json();
+                
+                // Update project with health data
+                $project->update([
+                    'last_health_check_at' => now(),
+                    'response_time_ms' => $responseTime,
+                    'last_health_details' => $healthData,
+                    'wp_version' => $healthData['wordpress']['version'] ?? null,
+                    'php_version' => $healthData['php']['version'] ?? null,
+                    'outdated_plugins_count' => $healthData['plugins']['outdated_count'] ?? null,
+                    'ssl_status' => ($healthData['ssl']['enabled'] ?? false) ? 'valid' : 'none',
+                    // Auto-update health status based on response
+                    'health_status' => $this->determineHealthStatus($healthData),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Health check completed successfully',
+                    'data' => $healthData,
+                ]);
+            } else {
+                // API returned error
+                $project->update([
+                    'last_health_check_at' => now(),
+                    'response_time_ms' => $responseTime,
+                    'health_status' => 'down_error',
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Health check endpoint returned error: ' . $response->status(),
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            // Update project as having issues
+            $project->update([
+                'last_health_check_at' => now(),
+                'health_status' => 'down_error',
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to connect: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Determine health status based on health data.
+     */
+    private function determineHealthStatus(array $healthData): string
+    {
+        // Critical issues = down/error
+        if (!($healthData['ssl']['enabled'] ?? true)) {
+            return 'down_error';
+        }
+
+        // Warning issues = updating/maintenance
+        if (($healthData['updates']['core_update_available'] ?? false) || 
+            ($healthData['plugins']['outdated_count'] ?? 0) > 5 ||
+            ($healthData['security']['debug_mode'] ?? false)) {
+            return 'updating';
+        }
+
+        return 'online';
+    }
 }

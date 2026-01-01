@@ -56,6 +56,7 @@ import {
     ClockCircleOutlined,
     SafetyOutlined,
     SettingOutlined,
+    SyncOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useState, useEffect } from "react";
@@ -213,6 +214,11 @@ export default function ProjectShow({
         null
     );
 
+    // Health monitoring state
+    const [healthSecretModalVisible, setHealthSecretModalVisible] = useState(false);
+    const [healthSecretForm] = Form.useForm();
+    const [healthCheckLoading, setHealthCheckLoading] = useState(false);
+
     // Inline assignee update handler
     const handleInlineAssigneeChange = (
         todoId: number,
@@ -329,6 +335,59 @@ export default function ProjectShow({
                 message.error("Failed to delete project");
             },
         });
+    };
+
+    // Health Monitoring Handlers
+    const handleOpenHealthSecretModal = () => {
+        healthSecretForm.setFieldsValue({
+            health_check_secret: project.health_check_secret || "",
+        });
+        setHealthSecretModalVisible(true);
+    };
+
+    const handleSaveHealthSecret = (values: { health_check_secret: string }) => {
+        router.put(
+            route("projects.update", project.id),
+            { health_check_secret: values.health_check_secret },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    message.success("Health monitoring secret saved!");
+                    setHealthSecretModalVisible(false);
+                    healthSecretForm.resetFields();
+                },
+                onError: () => {
+                    message.error("Failed to save health monitoring secret");
+                },
+            }
+        );
+    };
+
+    const handleCheckHealth = async () => {
+        if (!project.health_check_secret) {
+            message.warning("Please configure the health monitoring secret first");
+            return;
+        }
+
+        setHealthCheckLoading(true);
+        try {
+            const response = await axios.post(
+                route("projects.check-health", project.id)
+            );
+            if (response.data.success) {
+                message.success("Health check completed!");
+                // Refresh the page to show new data
+                router.reload({ only: ["project"] });
+            } else {
+                message.error(response.data.message || "Health check failed");
+            }
+        } catch (error: any) {
+            message.error(
+                error.response?.data?.message || "Failed to perform health check"
+            );
+        } finally {
+            setHealthCheckLoading(false);
+        }
     };
 
     // Credential Handlers
@@ -1809,6 +1868,30 @@ export default function ProjectShow({
                                                     </span>
                                                 </Space>
                                             }
+                                            extra={
+                                                <Space>
+                                                    <Button
+                                                        size="small"
+                                                        icon={<EditOutlined />}
+                                                        onClick={handleOpenHealthSecretModal}
+                                                    >
+                                                        {project.health_check_secret
+                                                            ? "Edit Secret"
+                                                            : "Add Secret Key"}
+                                                    </Button>
+                                                    {project.health_check_secret && (
+                                                        <Button
+                                                            size="small"
+                                                            type="primary"
+                                                            icon={<SyncOutlined spin={healthCheckLoading} />}
+                                                            onClick={handleCheckHealth}
+                                                            loading={healthCheckLoading}
+                                                        >
+                                                            Check Now
+                                                        </Button>
+                                                    )}
+                                                </Space>
+                                            }
                                             style={{ marginBottom: 16 }}
                                         >
                                             {project.health_check_secret ? (
@@ -1853,9 +1936,9 @@ export default function ProjectShow({
                                                     <Text type="secondary">
                                                         Install the LSM Health
                                                         Monitor plugin on this
-                                                        WordPress site, then add
-                                                        the secret key in the
-                                                        project settings.
+                                                        WordPress site, then
+                                                        click "Add Secret Key"
+                                                        to connect.
                                                     </Text>
                                                 </Space>
                                             )}
@@ -3257,6 +3340,70 @@ export default function ProjectShow({
                         <TextArea
                             rows={3}
                             placeholder="Optional notes about this resource"
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* Health Secret Modal */}
+            <Modal
+                title={
+                    <Space>
+                        <SafetyOutlined style={{ color: "#6c1e9f" }} />
+                        <span>Health Monitoring Configuration</span>
+                    </Space>
+                }
+                open={healthSecretModalVisible}
+                onCancel={() => {
+                    setHealthSecretModalVisible(false);
+                    healthSecretForm.resetFields();
+                }}
+                onOk={() => healthSecretForm.submit()}
+                okText="Save"
+                width={500}
+            >
+                <Form
+                    form={healthSecretForm}
+                    layout="vertical"
+                    onFinish={handleSaveHealthSecret}
+                >
+                    <div
+                        style={{
+                            background: "rgba(108, 30, 159, 0.05)",
+                            padding: 16,
+                            borderRadius: 8,
+                            marginBottom: 16,
+                        }}
+                    >
+                        <Text type="secondary">
+                            <InfoCircleOutlined style={{ marginRight: 8 }} />
+                            To get the secret key:
+                        </Text>
+                        <ol style={{ margin: "8px 0 0 0", paddingLeft: 20 }}>
+                            <li>
+                                Install the <strong>LSM Health Monitor</strong>{" "}
+                                plugin on your WordPress site
+                            </li>
+                            <li>
+                                Go to <strong>Settings → LSM Health Monitor</strong>
+                            </li>
+                            <li>Copy the Secret Key and paste it below</li>
+                        </ol>
+                    </div>
+
+                    <Form.Item
+                        name="health_check_secret"
+                        label="Secret Key"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Please enter the secret key",
+                            },
+                        ]}
+                    >
+                        <Input.Password
+                            placeholder="Paste secret key from WordPress plugin"
+                            style={{ fontFamily: "monospace" }}
                         />
                     </Form.Item>
                 </Form>

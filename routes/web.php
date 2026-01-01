@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Projects
     Route::resource('projects', ProjectController::class);
+    Route::post('/projects/{project}/check-health', [ProjectController::class, 'checkHealth'])->name('projects.check-health');
     
     // Credentials (nested under projects)
     Route::post('/projects/{project}/credentials', [CredentialController::class, 'store'])->name('credentials.store');
