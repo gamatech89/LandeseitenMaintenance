@@ -1,0 +1,340 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Project;
+use App\Models\Tag;
+use App\Models\User;
+use App\Notifications\ProjectAssignedNotification;
+use App\Notifications\ProjectStatusChangedNotification;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProjectController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): Response
+    {
+        Gate::authorize('viewAny', Project::class);
+
+        $query = Project::query()->with(['manager:id,name', 'developer:id,name', 'developers:id,name', 'tags']);
+
+        // Filter by health status
+        if ($request->has('health') && $request->health !== 'all') {
+            $query->where('health_status', $request->health);
+        }
+
+        // Filter by security status
+        if ($request->has('security') && $request->security !== 'all') {
+            $query->where('security_status', $request->security);
+        }
+
+        // Filter by manager (PM)
+        if ($request->filled('manager_id')) {
+            $query->where('manager_id', $request->manager_id);
+        }
+
+        // Filter by developer (check both legacy developer_id and developers pivot)
+        if ($request->filled('developer_id')) {
+            $developerId = $request->developer_id;
+            $query->where(function($q) use ($developerId) {
+                $q->where('developer_id', $developerId)
+                  ->orWhereHas('developers', fn($sub) => $sub->where('users.id', $developerId));
+            });
+        }
+
+        // Filter by tag
+        if ($request->filled('tag')) {
+            $query->whereHas('tags', function ($q) use ($request) {
+                $q->where('slug', $request->tag);
+            });
+        }
+
+        // Search
+        if ($request->has('search') && $request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('url', 'like', '%' . $request->search . '%')
+                  ->orWhere('client_email', 'like', '%' . $request->search . '%')
+                  ->orWhere('project_external_id', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $projects = $query->orderBy('updated_at', 'desc')->paginate(15);
+
+        // Get managers (role = manager) for PM select
+        $managers = User::where('role', 'manager')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        // Get developers (role = developer) for developer select
+        $developers = User::where('role', 'developer')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        // Get all users for backwards compatibility
+        $users = User::select('id', 'name', 'role')->orderBy('name')->get();
+
+        // Get all tags for filtering
+        $tags = Tag::orderBy('name')->get();
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['health', 'security', 'search', 'manager_id', 'developer_id', 'tag']),
+            'users' => $users,
+            'managers' => $managers,
+            'developers' => $developers,
+            'tags' => $tags,
+        ]);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Project $project): Response
+    {
+        Gate::authorize('view', $project);
+
+        $project->load(['credentials', 'resources', 'todos.assignee:id,name', 'manager:id,name', 'developer:id,name', 'developers:id,name', 'tags']);
+
+        // Get managers (role = manager) for PM select
+        $managers = User::where('role', 'manager')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        // Get developers (role = developer) for developer select
+        $developers = User::where('role', 'developer')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        // Get all users for backwards compatibility (used for todo assignees)
+        $users = User::select('id', 'name', 'role')->orderBy('name')->get();
+
+        // Get all tags for tag management
+        $availableTags = Tag::orderBy('name')->get();
+
+        // Pass user permissions to frontend
+        $can = [
+            'update' => Gate::allows('update', $project),
+            'delete' => Gate::allows('delete', $project),
+            'manageCredentials' => Gate::allows('manageCredentials', $project),
+            'assignTeam' => Gate::allows('assignTeam', $project),
+        ];
+
+        return Inertia::render('Projects/Show', [
+            'project' => $project,
+            'users' => $users,
+            'managers' => $managers,
+            'developers' => $developers,
+            'availableTags' => $availableTags,
+            'can' => $can,
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        Gate::authorize('create', Project::class);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'url' => 'required|url',
+            'client_email' => 'nullable|email',
+            'notes' => 'nullable|string',
+            'health_status' => 'required|in:online,down_error,updating',
+            'security_status' => 'required|in:secure,monitoring,compromised,hacked',
+            'manager_id' => 'nullable|exists:users,id',
+            'developer_id' => 'nullable|exists:users,id',
+            'developer_ids' => 'nullable|array',
+            'developer_ids.*' => 'exists:users,id',
+            'project_external_id' => 'nullable|string|max:255',
+            'maintenance_id' => 'nullable|string|max:255',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
+        ]);
+
+        // Extract tag_ids and developer_ids before creating project
+        $tagIds = $validated['tag_ids'] ?? [];
+        $developerIds = $validated['developer_ids'] ?? [];
+        unset($validated['tag_ids'], $validated['developer_ids']);
+
+        $project = Project::create($validated);
+
+        // Sync tags
+        if (!empty($tagIds)) {
+            $project->tags()->sync($tagIds);
+        }
+
+        // Sync developers
+        if (!empty($developerIds)) {
+            $project->developers()->sync($developerIds);
+            // Send notifications to assigned developers
+            foreach ($developerIds as $devId) {
+                $developer = User::find($devId);
+                $developer?->notify(new ProjectAssignedNotification($project, 'developer'));
+            }
+        }
+
+        // Send notifications to assigned users
+        if ($project->manager_id) {
+            $manager = User::find($project->manager_id);
+            $manager?->notify(new ProjectAssignedNotification($project, 'manager'));
+        }
+        if ($project->developer_id) {
+            $developer = User::find($project->developer_id);
+            $developer?->notify(new ProjectAssignedNotification($project, 'developer'));
+        }
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Project created successfully!');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Project $project)
+    {
+        Gate::authorize('update', $project);
+
+        $user = Auth::user();
+        
+        $rules = [
+            'name' => 'sometimes|required|string|max:255',
+            'url' => 'sometimes|required|url',
+            'client_email' => 'nullable|email',
+            'notes' => 'nullable|string',
+            'health_status' => 'sometimes|required|in:online,down_error,updating',
+            'security_status' => 'sometimes|required|in:secure,monitoring,compromised,hacked',
+            'project_external_id' => 'nullable|string|max:255',
+            'maintenance_id' => 'nullable|string|max:255',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
+        ];
+
+        // Only admins can change the manager
+        if ($user->isAdmin()) {
+            $rules['manager_id'] = 'nullable|exists:users,id';
+        }
+
+        // Admins and managers can change the developer
+        if ($user->isAdmin() || $user->isManager()) {
+            $rules['developer_id'] = 'nullable|exists:users,id';
+            $rules['developer_ids'] = 'nullable|array';
+            $rules['developer_ids.*'] = 'exists:users,id';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Track changes for notifications
+        $oldManagerId = $project->manager_id;
+        $oldDeveloperId = $project->developer_id;
+        $oldDeveloperIds = $project->developers->pluck('id')->toArray();
+        $oldHealthStatus = $project->health_status;
+        $oldSecurityStatus = $project->security_status;
+
+        // Extract tag_ids and developer_ids before updating project
+        $tagIds = $validated['tag_ids'] ?? null;
+        $developerIds = $validated['developer_ids'] ?? null;
+        unset($validated['tag_ids'], $validated['developer_ids']);
+
+        $project->update($validated);
+
+        // Sync tags if provided
+        if ($tagIds !== null) {
+            $project->tags()->sync($tagIds);
+        }
+
+        // Sync developers if provided
+        if ($developerIds !== null) {
+            $project->developers()->sync($developerIds);
+            // Send notifications to newly assigned developers
+            $newDeveloperIds = array_diff($developerIds, $oldDeveloperIds);
+            foreach ($newDeveloperIds as $devId) {
+                $developer = User::find($devId);
+                $developer?->notify(new ProjectAssignedNotification($project, 'developer'));
+            }
+        }
+
+        // Send notifications for assignment changes
+        if (isset($validated['manager_id']) && $validated['manager_id'] != $oldManagerId && $validated['manager_id']) {
+            $newManager = User::find($validated['manager_id']);
+            $newManager?->notify(new ProjectAssignedNotification($project, 'manager'));
+        }
+        if (isset($validated['developer_id']) && $validated['developer_id'] != $oldDeveloperId && $validated['developer_id']) {
+            $newDeveloper = User::find($validated['developer_id']);
+            $newDeveloper?->notify(new ProjectAssignedNotification($project, 'developer'));
+        }
+
+        // Send notifications for status changes to assigned team members
+        $teamMembers = collect();
+        if ($project->manager_id) {
+            $teamMembers->push(User::find($project->manager_id));
+        }
+        if ($project->developer_id) {
+            $teamMembers->push(User::find($project->developer_id));
+        }
+        // Include all developers from the many-to-many relationship
+        foreach ($project->developers as $developer) {
+            $teamMembers->push($developer);
+        }
+        $teamMembers = $teamMembers->filter()->unique('id');
+
+        if ($project->health_status !== $oldHealthStatus) {
+            foreach ($teamMembers as $member) {
+                $member->notify(new ProjectStatusChangedNotification(
+                    $project, 'health', $oldHealthStatus, $project->health_status
+                ));
+            }
+        }
+
+        if ($project->security_status !== $oldSecurityStatus) {
+            foreach ($teamMembers as $member) {
+                $member->notify(new ProjectStatusChangedNotification(
+                    $project, 'security', $oldSecurityStatus, $project->security_status
+                ));
+            }
+        }
+
+        return back()->with('success', 'Project updated successfully!');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Project $project)
+    {
+        Gate::authorize('delete', $project);
+
+        $project->delete();
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project deleted successfully!');
+    }
+}
