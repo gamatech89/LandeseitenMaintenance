@@ -330,15 +330,15 @@
     .lsm-copy-field {
         flex-direction: column;
     }
-    
+
     .lsm-copy-field input {
         max-width: 100%;
     }
-    
+
     .lsm-actions {
         flex-direction: column;
     }
-    
+
     .lsm-actions .button {
         width: 100%;
         justify-content: center;

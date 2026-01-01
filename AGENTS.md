@@ -383,11 +383,11 @@ wordpress-plugin/lsm-health-monitor/
 
 ### API Endpoints
 
-| Endpoint | Auth | Description |
-|----------|------|-------------|
-| `/wp-json/lsm/v1/ping` | None | Basic availability check |
-| `/wp-json/lsm/v1/status` | Secret + License | Quick status info |
-| `/wp-json/lsm/v1/health` | Secret + License | Full health data |
+| Endpoint                 | Auth             | Description              |
+| ------------------------ | ---------------- | ------------------------ |
+| `/wp-json/lsm/v1/ping`   | None             | Basic availability check |
+| `/wp-json/lsm/v1/status` | Secret + License | Quick status info        |
+| `/wp-json/lsm/v1/health` | Secret + License | Full health data         |
 
 ### License Validation
 

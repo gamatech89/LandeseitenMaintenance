@@ -269,6 +269,7 @@ class ProjectController extends Controller
             'security_status' => 'sometimes|required|in:secure,monitoring,compromised,hacked',
             'project_external_id' => 'nullable|string|max:255',
             'maintenance_id' => 'nullable|string|max:255',
+            'health_check_secret' => 'nullable|string|max:255',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:tags,id',
         ];

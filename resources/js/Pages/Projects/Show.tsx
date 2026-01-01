@@ -55,6 +55,7 @@ import {
     ShareAltOutlined,
     ClockCircleOutlined,
     SafetyOutlined,
+    SettingOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useState, useEffect } from "react";
@@ -126,6 +127,27 @@ interface Project {
     credentials: Credential[];
     resources: Resource[];
     todos: Todo[];
+    // Health monitoring fields
+    health_check_secret: string | null;
+    response_time_ms: number | null;
+    last_health_check_at: string | null;
+    ssl_status: string | null;
+    ssl_expires_at: string | null;
+    wp_version: string | null;
+    php_version: string | null;
+    outdated_plugins_count: number | null;
+    last_health_details: {
+        status?: string;
+        wordpress?: { version: string };
+        php?: { version: string };
+        plugins?: { total_count: number; active_count: number; outdated_count: number; outdated_plugins?: { name: string; current_version: string; new_version: string }[] };
+        theme?: { name: string; version: string; update_available?: boolean };
+        ssl?: { enabled: boolean };
+        updates?: { core_update_available: boolean; core_new_version?: string };
+        security?: { debug_mode: boolean; file_editing_disabled: boolean };
+        disk?: { free_space?: string; total_space?: string };
+        performance?: { memory_usage?: string };
+    } | null;
 }
 
 interface User {
@@ -280,6 +302,7 @@ export default function ProjectShow({
             developer_ids: project.developers?.map((d) => d.id) || [],
             project_external_id: project.project_external_id,
             maintenance_id: project.maintenance_id,
+            health_check_secret: project.health_check_secret,
         });
         setProjectModalVisible(true);
     };
@@ -1765,6 +1788,503 @@ export default function ProjectShow({
                                     </div>
                                 ),
                             },
+                            {
+                                key: "health",
+                                label: (
+                                    <span>
+                                        <SafetyOutlined /> Health Monitor
+                                    </span>
+                                ),
+                                children: (
+                                    <div style={{ paddingTop: 16 }}>
+                                        {/* Health Check Configuration */}
+                                        <Card
+                                            size="small"
+                                            title={
+                                                <Space>
+                                                    <SettingOutlined />
+                                                    <span>
+                                                        WordPress Health
+                                                        Monitoring
+                                                    </span>
+                                                </Space>
+                                            }
+                                            style={{ marginBottom: 16 }}
+                                        >
+                                            {project.health_check_secret ? (
+                                                <Space
+                                                    direction="vertical"
+                                                    style={{ width: "100%" }}
+                                                >
+                                                    <Tag color="success">
+                                                        <CheckCircleOutlined />{" "}
+                                                        Connected
+                                                    </Tag>
+                                                    <Text type="secondary">
+                                                        Secret Key:{" "}
+                                                        <Text
+                                                            code
+                                                            copyable
+                                                        >
+                                                            {project.health_check_secret.substring(
+                                                                0,
+                                                                8
+                                                            )}
+                                                            ...
+                                                        </Text>
+                                                    </Text>
+                                                    {project.last_health_check_at && (
+                                                        <Text type="secondary">
+                                                            Last check:{" "}
+                                                            {dayjs(
+                                                                project.last_health_check_at
+                                                            ).format(
+                                                                "DD.MM.YYYY HH:mm"
+                                                            )}
+                                                        </Text>
+                                                    )}
+                                                </Space>
+                                            ) : (
+                                                <Space direction="vertical">
+                                                    <Tag color="warning">
+                                                        <WarningOutlined /> Not
+                                                        Configured
+                                                    </Tag>
+                                                    <Text type="secondary">
+                                                        Install the LSM Health
+                                                        Monitor plugin on this
+                                                        WordPress site, then add
+                                                        the secret key in the
+                                                        project settings.
+                                                    </Text>
+                                                </Space>
+                                            )}
+                                        </Card>
+
+                                        {/* Health Details */}
+                                        {project.last_health_details ? (
+                                            <Row gutter={[16, 16]}>
+                                                {/* WordPress Info */}
+                                                <Col xs={24} sm={12} lg={8}>
+                                                    <Card
+                                                        size="small"
+                                                        title="WordPress"
+                                                    >
+                                                        <Space direction="vertical">
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Version:
+                                                                </Text>{" "}
+                                                                <Text strong>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .wordpress
+                                                                        ?.version ||
+                                                                        project.wp_version ||
+                                                                        "N/A"}
+                                                                </Text>
+                                                                {project
+                                                                    .last_health_details
+                                                                    .updates
+                                                                    ?.core_update_available && (
+                                                                    <Tag
+                                                                        color="orange"
+                                                                        style={{
+                                                                            marginLeft: 8,
+                                                                        }}
+                                                                    >
+                                                                        Update
+                                                                        available
+                                                                    </Tag>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    PHP:
+                                                                </Text>{" "}
+                                                                <Text>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .php
+                                                                        ?.version ||
+                                                                        project.php_version ||
+                                                                        "N/A"}
+                                                                </Text>
+                                                            </div>
+                                                        </Space>
+                                                    </Card>
+                                                </Col>
+
+                                                {/* Plugins */}
+                                                <Col xs={24} sm={12} lg={8}>
+                                                    <Card
+                                                        size="small"
+                                                        title="Plugins"
+                                                    >
+                                                        <Space direction="vertical">
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Total:
+                                                                </Text>{" "}
+                                                                <Text>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .plugins
+                                                                        ?.total_count ||
+                                                                        0}
+                                                                </Text>
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Active:
+                                                                </Text>{" "}
+                                                                <Text>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .plugins
+                                                                        ?.active_count ||
+                                                                        0}
+                                                                </Text>
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Outdated:
+                                                                </Text>{" "}
+                                                                <Text
+                                                                    type={
+                                                                        (project
+                                                                            .last_health_details
+                                                                            .plugins
+                                                                            ?.outdated_count ||
+                                                                            0) >
+                                                                        0
+                                                                            ? "danger"
+                                                                            : undefined
+                                                                    }
+                                                                    strong={
+                                                                        (project
+                                                                            .last_health_details
+                                                                            .plugins
+                                                                            ?.outdated_count ||
+                                                                            0) >
+                                                                        0
+                                                                    }
+                                                                >
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .plugins
+                                                                        ?.outdated_count ||
+                                                                        0}
+                                                                </Text>
+                                                            </div>
+                                                        </Space>
+                                                    </Card>
+                                                </Col>
+
+                                                {/* Security */}
+                                                <Col xs={24} sm={12} lg={8}>
+                                                    <Card
+                                                        size="small"
+                                                        title="Security"
+                                                    >
+                                                        <Space direction="vertical">
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    SSL:
+                                                                </Text>{" "}
+                                                                {project
+                                                                    .last_health_details
+                                                                    .ssl
+                                                                    ?.enabled ? (
+                                                                    <Tag color="success">
+                                                                        Enabled
+                                                                    </Tag>
+                                                                ) : (
+                                                                    <Tag color="error">
+                                                                        Disabled
+                                                                    </Tag>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Debug Mode:
+                                                                </Text>{" "}
+                                                                {project
+                                                                    .last_health_details
+                                                                    .security
+                                                                    ?.debug_mode ? (
+                                                                    <Tag color="warning">
+                                                                        On
+                                                                    </Tag>
+                                                                ) : (
+                                                                    <Tag color="success">
+                                                                        Off
+                                                                    </Tag>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    File Edit:
+                                                                </Text>{" "}
+                                                                {project
+                                                                    .last_health_details
+                                                                    .security
+                                                                    ?.file_editing_disabled ? (
+                                                                    <Tag color="success">
+                                                                        Disabled
+                                                                    </Tag>
+                                                                ) : (
+                                                                    <Tag color="warning">
+                                                                        Enabled
+                                                                    </Tag>
+                                                                )}
+                                                            </div>
+                                                        </Space>
+                                                    </Card>
+                                                </Col>
+
+                                                {/* Theme */}
+                                                <Col xs={24} sm={12} lg={8}>
+                                                    <Card
+                                                        size="small"
+                                                        title="Theme"
+                                                    >
+                                                        <Space direction="vertical">
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Name:
+                                                                </Text>{" "}
+                                                                <Text>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .theme
+                                                                        ?.name ||
+                                                                        "N/A"}
+                                                                </Text>
+                                                            </div>
+                                                            <div>
+                                                                <Text type="secondary">
+                                                                    Version:
+                                                                </Text>{" "}
+                                                                <Text>
+                                                                    {project
+                                                                        .last_health_details
+                                                                        .theme
+                                                                        ?.version ||
+                                                                        "N/A"}
+                                                                </Text>
+                                                                {project
+                                                                    .last_health_details
+                                                                    .theme
+                                                                    ?.update_available && (
+                                                                    <Tag
+                                                                        color="orange"
+                                                                        style={{
+                                                                            marginLeft: 8,
+                                                                        }}
+                                                                    >
+                                                                        Update
+                                                                    </Tag>
+                                                                )}
+                                                            </div>
+                                                        </Space>
+                                                    </Card>
+                                                </Col>
+
+                                                {/* Performance */}
+                                                <Col xs={24} sm={12} lg={8}>
+                                                    <Card
+                                                        size="small"
+                                                        title="Performance"
+                                                    >
+                                                        <Space direction="vertical">
+                                                            {project.response_time_ms && (
+                                                                <div>
+                                                                    <Text type="secondary">
+                                                                        Response
+                                                                        Time:
+                                                                    </Text>{" "}
+                                                                    <Text>
+                                                                        {
+                                                                            project.response_time_ms
+                                                                        }
+                                                                        ms
+                                                                    </Text>
+                                                                </div>
+                                                            )}
+                                                            {project
+                                                                .last_health_details
+                                                                .performance
+                                                                ?.memory_usage && (
+                                                                <div>
+                                                                    <Text type="secondary">
+                                                                        Memory:
+                                                                    </Text>{" "}
+                                                                    <Text>
+                                                                        {
+                                                                            project
+                                                                                .last_health_details
+                                                                                .performance
+                                                                                .memory_usage
+                                                                        }
+                                                                    </Text>
+                                                                </div>
+                                                            )}
+                                                        </Space>
+                                                    </Card>
+                                                </Col>
+
+                                                {/* Disk */}
+                                                {project.last_health_details
+                                                    .disk && (
+                                                    <Col xs={24} sm={12} lg={8}>
+                                                        <Card
+                                                            size="small"
+                                                            title="Disk Space"
+                                                        >
+                                                            <Space direction="vertical">
+                                                                {project
+                                                                    .last_health_details
+                                                                    .disk
+                                                                    ?.free_space && (
+                                                                    <div>
+                                                                        <Text type="secondary">
+                                                                            Free:
+                                                                        </Text>{" "}
+                                                                        <Text>
+                                                                            {
+                                                                                project
+                                                                                    .last_health_details
+                                                                                    .disk
+                                                                                    .free_space
+                                                                            }
+                                                                        </Text>
+                                                                    </div>
+                                                                )}
+                                                                {project
+                                                                    .last_health_details
+                                                                    .disk
+                                                                    ?.total_space && (
+                                                                    <div>
+                                                                        <Text type="secondary">
+                                                                            Total:
+                                                                        </Text>{" "}
+                                                                        <Text>
+                                                                            {
+                                                                                project
+                                                                                    .last_health_details
+                                                                                    .disk
+                                                                                    .total_space
+                                                                            }
+                                                                        </Text>
+                                                                    </div>
+                                                                )}
+                                                            </Space>
+                                                        </Card>
+                                                    </Col>
+                                                )}
+
+                                                {/* Outdated Plugins List */}
+                                                {project.last_health_details
+                                                    .plugins?.outdated_plugins &&
+                                                    project.last_health_details
+                                                        .plugins
+                                                        .outdated_plugins
+                                                        .length > 0 && (
+                                                        <Col xs={24}>
+                                                            <Card
+                                                                size="small"
+                                                                title={
+                                                                    <Text type="danger">
+                                                                        <WarningOutlined />{" "}
+                                                                        Outdated
+                                                                        Plugins (
+                                                                        {
+                                                                            project
+                                                                                .last_health_details
+                                                                                .plugins
+                                                                                .outdated_plugins
+                                                                                .length
+                                                                        }
+                                                                        )
+                                                                    </Text>
+                                                                }
+                                                            >
+                                                                <Table
+                                                                    size="small"
+                                                                    dataSource={
+                                                                        project
+                                                                            .last_health_details
+                                                                            .plugins
+                                                                            .outdated_plugins
+                                                                    }
+                                                                    rowKey="name"
+                                                                    pagination={
+                                                                        false
+                                                                    }
+                                                                    columns={[
+                                                                        {
+                                                                            title: "Plugin",
+                                                                            dataIndex:
+                                                                                "name",
+                                                                            key: "name",
+                                                                        },
+                                                                        {
+                                                                            title: "Current",
+                                                                            dataIndex:
+                                                                                "current_version",
+                                                                            key: "current",
+                                                                        },
+                                                                        {
+                                                                            title: "Available",
+                                                                            dataIndex:
+                                                                                "new_version",
+                                                                            key: "new",
+                                                                            render:
+                                                                                (
+                                                                                    v: string
+                                                                                ) => (
+                                                                                    <Tag color="green">
+                                                                                        {
+                                                                                            v
+                                                                                        }
+                                                                                    </Tag>
+                                                                                ),
+                                                                        },
+                                                                    ]}
+                                                                />
+                                                            </Card>
+                                                        </Col>
+                                                    )}
+                                            </Row>
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    textAlign: "center",
+                                                    padding: "40px 20px",
+                                                    background:
+                                                        "rgba(108, 30, 159, 0.02)",
+                                                    borderRadius: 12,
+                                                }}
+                                            >
+                                                <InfoCircleOutlined
+                                                    style={{
+                                                        fontSize: 32,
+                                                        color: "#d9d9d9",
+                                                        marginBottom: 12,
+                                                    }}
+                                                />
+                                                <Paragraph type="secondary">
+                                                    No health data available
+                                                    yet. Configure the health
+                                                    monitoring secret to start
+                                                    collecting data.
+                                                </Paragraph>
+                                            </div>
+                                        )}
+                                    </div>
+                                ),
+                            },
                         ]}
                     />
                 </Card>
@@ -1964,6 +2484,19 @@ export default function ProjectShow({
                             </Form.Item>
                         </Col>
                     </Row>
+
+                    <Divider orientation="left">Health Monitoring</Divider>
+
+                    <Form.Item
+                        name="health_check_secret"
+                        label="Health Check Secret Key"
+                        tooltip="Enter the secret key from the LSM Health Monitor WordPress plugin"
+                    >
+                        <Input.Password
+                            placeholder="Paste secret key from WordPress plugin"
+                            style={{ fontFamily: "monospace" }}
+                        />
+                    </Form.Item>
 
                     <Form.Item name="notes" label="Notes">
                         <TextArea rows={4} placeholder="Project notes..." />
