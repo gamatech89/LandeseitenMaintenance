@@ -2708,7 +2708,9 @@ export default function ProjectShow({
                                         projectId={project.id}
                                         reports={maintenanceReports || []}
                                         todos={project.todos || []}
-                                        canUpdate={isAdmin || isManager || isDeveloper}
+                                        canUpdate={
+                                            isAdmin || isManager || isDeveloper
+                                        }
                                     />
                                 ),
                             },
