@@ -93,12 +93,16 @@ export default function AuthenticatedLayout({
             icon: <LockOutlined />,
             label: <Link href={route("vault.index")}>Vault</Link>,
         },
-        {
+    ];
+
+    // Only show Activity Log for admins
+    if (user.role === "admin") {
+        menuItems.push({
             key: "activity",
             icon: <HistoryOutlined />,
             label: <Link href={route("activity.index")}>Activity Log</Link>,
-        },
-    ];
+        });
+    }
 
     // Add Team Management for Admins and Managers
     if (user.role === "admin" || user.role === "manager") {
