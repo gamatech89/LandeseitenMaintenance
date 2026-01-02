@@ -52,7 +52,9 @@ class TodoPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            // Allow if assigned as single developer or in many-to-many
+            return $project->developer_id === $user->id
+                || $project->developers()->where('user_id', $user->id)->exists();
         }
         
         return false;
@@ -75,7 +77,9 @@ class TodoPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            // Allow if assigned as single developer or in many-to-many
+            return $project->developer_id === $user->id
+                || $project->developers()->where('user_id', $user->id)->exists();
         }
         
         return false;
