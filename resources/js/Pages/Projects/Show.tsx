@@ -225,6 +225,7 @@ export default function ProjectShow({
 
     const isAdmin = auth.user.role === "admin";
     const isManager = auth.user.role === "manager";
+    const isDeveloper = auth.user.role === "developer";
 
     const [visiblePasswords, setVisiblePasswords] = useState<{
         [key: number]: boolean;
@@ -2707,7 +2708,7 @@ export default function ProjectShow({
                                         projectId={project.id}
                                         reports={maintenanceReports || []}
                                         todos={project.todos || []}
-                                        canUpdate={isAdmin || isManager}
+                                        canUpdate={isAdmin || isManager || isDeveloper}
                                     />
                                 ),
                             },

@@ -57,7 +57,9 @@ class ProjectPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            // Check both legacy single developer and many-to-many relationship
+            return $project->developer_id === $user->id 
+                || $project->developers()->where('user_id', $user->id)->exists();
         }
         
         return false;
@@ -103,7 +105,9 @@ class ProjectPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            // Check both legacy single developer and many-to-many relationship
+            return $project->developer_id === $user->id 
+                || $project->developers()->where('user_id', $user->id)->exists();
         }
         
         return false;
