@@ -22,6 +22,7 @@ class Credential extends Model
         'password',
         'url',
         'metadata',
+        'note',
     ];
 
     /**

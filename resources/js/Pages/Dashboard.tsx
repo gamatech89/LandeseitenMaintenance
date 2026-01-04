@@ -293,7 +293,7 @@ export default function Dashboard({ stats, recentIssues }: DashboardProps) {
                                     onClick={() =>
                                         (window.location.href = route(
                                             "projects.index",
-                                            { health: "offline" }
+                                            { health: "down_error" }
                                         ))
                                     }
                                 >

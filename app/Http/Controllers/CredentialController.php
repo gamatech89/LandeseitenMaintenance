@@ -24,6 +24,7 @@ class CredentialController extends Controller
             'metadata.port' => 'nullable|string|max:10',
             'metadata.host' => 'nullable|string|max:255',
             'metadata.database_name' => 'nullable|string|max:255',
+            'note' => 'nullable|string|max:1000',
         ]);
 
         $project->credentials()->create($validated);
@@ -46,6 +47,7 @@ class CredentialController extends Controller
             'metadata.port' => 'nullable|string|max:10',
             'metadata.host' => 'nullable|string|max:255',
             'metadata.database_name' => 'nullable|string|max:255',
+            'note' => 'nullable|string|max:1000',
         ]);
 
         $credential->update($validated);
