@@ -835,11 +835,11 @@ export default function ProjectShow({
             case "critical":
                 return "error"; // Red for urgent
             case "high":
-                return "#d4380d"; // Red-orange for high
+                return "warning"; // Orange for high
             case "medium":
-                return "warning"; // Orange for medium
+                return "success"; // Green for medium
             default:
-                return "#1890ff"; // Blue for low
+                return "default"; // Gray for low
         }
     };
 

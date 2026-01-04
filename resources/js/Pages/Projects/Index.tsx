@@ -403,11 +403,11 @@ export default function ProjectsIndex({
                         case "critical":
                             return "#f5222d"; // Red for urgent
                         case "high":
-                            return "#d4380d"; // Red-orange for high
+                            return "#fa8c16"; // Orange for high
                         case "medium":
-                            return "#fa8c16"; // Orange for medium
+                            return "#52c41a"; // Green for medium
                         default:
-                            return "#1890ff"; // Blue for low/no todos
+                            return "#d9d9d9"; // Gray for low/no todos
                     }
                 };
 

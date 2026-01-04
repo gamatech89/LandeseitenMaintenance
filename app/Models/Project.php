@@ -16,35 +16,7 @@ class Project extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $fillable = [
-        'name',
-        'url',
-        'domain',
-        'client_email',
-        'notes',
-        'health_status',
-        'security_status',
-        'is_active',
-        'manager_id',
-        'developer_id',
-        'project_external_id',
-        'maintenance_id',
-        'hosting_provider',
-        'hosting_url',
-        'ssh_access',
-        'drive_link',
-        'trello_link',
-        // Health monitoring fields
-        'response_time_ms',
-        'last_health_check_at',
-        'ssl_status',
-        'ssl_expires_at',
-        'wp_version',
-        'php_version',
-        'outdated_plugins_count',
-        'health_check_secret',
-        'last_health_details',
-    ];
+    protected $appends = ['highest_todo_priority'];
 
     protected function casts(): array
     {
