@@ -21,7 +21,7 @@ class TodoController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'priority' => 'nullable|string|in:low,medium,high,critical',
+            'priority' => 'nullable|string|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'assignee_id' => 'nullable|integer|exists:users,id',
             'file' => 'nullable|file|max:10240', // 10MB max
@@ -84,7 +84,7 @@ class TodoController extends Controller
             'title' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'completed' => 'sometimes|boolean',
-            'priority' => 'nullable|string|in:low,medium,high,critical',
+            'priority' => 'nullable|string|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'assignee_id' => 'nullable|integer|exists:users,id',
             'file' => 'nullable|file|max:10240',

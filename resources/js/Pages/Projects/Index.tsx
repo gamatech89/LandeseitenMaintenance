@@ -400,14 +400,14 @@ export default function ProjectsIndex({
             render: (count: number, record: Project) => {
                 const getBadgeColor = (priority: string | null) => {
                     switch (priority) {
-                        case "critical":
+                        case "urgent":
                             return "#f5222d"; // Red for urgent
                         case "high":
-                            return "#fa8c16"; // Orange for high
+                            return "#fa8c16"; // Darker orange for high
                         case "medium":
-                            return "#52c41a"; // Green for medium
+                            return "#faad14"; // Light orange for medium
                         default:
-                            return "#d9d9d9"; // Gray for low/no todos
+                            return "#1890ff"; // Light blue for low/no todos
                     }
                 };
 

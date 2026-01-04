@@ -32,7 +32,7 @@ class Project extends Model
      */
     public function getHighestTodoPriorityAttribute(): ?string
     {
-        $priorities = ['low', 'medium', 'high', 'critical'];
+        $priorities = ['low', 'medium', 'high', 'urgent'];
         $priorityOrder = array_flip($priorities);
 
         $highestPriority = null;

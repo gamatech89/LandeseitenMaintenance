@@ -832,20 +832,20 @@ export default function ProjectShow({
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "critical":
+            case "urgent":
                 return "error"; // Red for urgent
             case "high":
-                return "warning"; // Orange for high
+                return "warning"; // Darker orange for high
             case "medium":
-                return "success"; // Green for medium
+                return "orange"; // Light orange for medium
             default:
-                return "default"; // Gray for low
+                return "blue"; // Light blue for low
         }
     };
 
     const getPriorityText = (priority: string) => {
         switch (priority) {
-            case "critical":
+            case "urgent":
                 return "Urgent";
             case "high":
                 return "High";
@@ -3379,7 +3379,7 @@ export default function ProjectShow({
                             <Select.Option value="low">Low</Select.Option>
                             <Select.Option value="medium">Medium</Select.Option>
                             <Select.Option value="high">High</Select.Option>
-                            <Select.Option value="critical">Urgent</Select.Option>
+                            <Select.Option value="urgent">Urgent</Select.Option>
                         </Select>
                     </Form.Item>
                     <Form.Item name="due_date" label="Due Date">
