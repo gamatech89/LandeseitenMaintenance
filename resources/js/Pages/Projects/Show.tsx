@@ -103,7 +103,7 @@ interface Todo {
     description: string;
     completed: boolean;
     status: "pending" | "in_progress" | "completed";
-    priority: number;
+    priority: string;
     due_date: string;
     completed_at?: string;
     file_path: string | null;
@@ -598,7 +598,7 @@ export default function ProjectShow({
         const formData = new FormData();
         formData.append("title", values.title);
         formData.append("description", values.description || "");
-        formData.append("priority", values.priority?.toString() || "0");
+        formData.append("priority", values.priority || "medium");
         formData.append("completed", values.completed ? "1" : "0");
         if (values.due_date) {
             formData.append("due_date", values.due_date.format("YYYY-MM-DD"));
@@ -830,25 +830,29 @@ export default function ProjectShow({
         }
     };
 
-    const getPriorityColor = (priority: number) => {
+    const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 2:
+            case "critical":
                 return "error";
-            case 1:
+            case "high":
                 return "warning";
+            case "medium":
+                return "success";
             default:
                 return "default";
         }
     };
 
-    const getPriorityText = (priority: number) => {
+    const getPriorityText = (priority: string) => {
         switch (priority) {
-            case 2:
+            case "critical":
                 return "Urgent";
-            case 1:
+            case "high":
                 return "High";
+            case "medium":
+                return "Medium";
             default:
-                return "Normal";
+                return "Low";
         }
     };
 
@@ -1214,7 +1218,7 @@ export default function ProjectShow({
             title: "Priority",
             dataIndex: "priority",
             key: "priority",
-            render: (priority: number) => (
+            render: (priority: string) => (
                 <Tag color={getPriorityColor(priority)}>
                     {getPriorityText(priority)}
                 </Tag>
@@ -3353,7 +3357,7 @@ export default function ProjectShow({
                     form={todoForm}
                     layout="vertical"
                     onFinish={handleSaveTodo}
-                    initialValues={{ priority: 0, completed: false }}
+                    initialValues={{ priority: "medium", completed: false }}
                 >
                     <Form.Item
                         name="title"
@@ -3372,9 +3376,10 @@ export default function ProjectShow({
                     </Form.Item>
                     <Form.Item name="priority" label="Priority">
                         <Select>
-                            <Select.Option value={0}>Normal</Select.Option>
-                            <Select.Option value={1}>High</Select.Option>
-                            <Select.Option value={2}>Urgent</Select.Option>
+                            <Select.Option value="low">Low</Select.Option>
+                            <Select.Option value="medium">Medium</Select.Option>
+                            <Select.Option value="high">High</Select.Option>
+                            <Select.Option value="critical">Urgent</Select.Option>
                         </Select>
                     </Form.Item>
                     <Form.Item name="due_date" label="Due Date">
