@@ -19,9 +19,11 @@ return new class extends Migration
         });
 
         // Copy data from old column to new column, converting 'critical' to 'urgent'
+        // and ensuring all values are valid for the new enum
         DB::statement("UPDATE todos SET priority_new = CASE 
             WHEN priority = 'critical' THEN 'urgent' 
-            ELSE priority 
+            WHEN priority IN ('low', 'medium', 'high') THEN priority
+            ELSE 'medium' 
             END");
 
         // Drop old column and rename new column
@@ -45,9 +47,11 @@ return new class extends Migration
         });
 
         // Copy data from new column to old column, converting 'urgent' to 'critical'
+        // and ensuring all values are valid for the old enum
         DB::statement("UPDATE todos SET priority_old = CASE 
             WHEN priority = 'urgent' THEN 'critical' 
-            ELSE priority 
+            WHEN priority IN ('low', 'medium', 'high') THEN priority
+            ELSE 'medium' 
             END");
 
         // Drop new column and rename old column back
