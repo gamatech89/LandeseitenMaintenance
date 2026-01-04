@@ -833,13 +833,13 @@ export default function ProjectShow({
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case "critical":
-                return "error";
+                return "error"; // Red for urgent
             case "high":
-                return "warning";
+                return "#d4380d"; // Red-orange for high
             case "medium":
-                return "success";
+                return "warning"; // Orange for medium
             default:
-                return "default";
+                return "#1890ff"; // Blue for low
         }
     };
 

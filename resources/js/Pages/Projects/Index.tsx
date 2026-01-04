@@ -69,6 +69,7 @@ interface Project {
     developers: User[];
     updated_at: string;
     todos_count: number;
+    highest_todo_priority: string | null;
 }
 
 interface ProjectsIndexProps {
@@ -396,21 +397,36 @@ export default function ProjectsIndex({
             dataIndex: "todos_count",
             key: "todos_count",
             width: 80,
-            render: (count: number) => (
-                <Badge
-                    count={count}
-                    showZero
-                    style={{
-                        backgroundColor: count > 0 ? "#f59e0b" : "#d9d9d9",
-                        color: "white",
-                        fontSize: 11,
-                        minWidth: 18,
-                        height: 18,
-                        lineHeight: "16px",
-                        borderRadius: 9,
-                    }}
-                />
-            ),
+            render: (count: number, record: Project) => {
+                const getBadgeColor = (priority: string | null) => {
+                    switch (priority) {
+                        case "critical":
+                            return "#f5222d"; // Red for urgent
+                        case "high":
+                            return "#d4380d"; // Red-orange for high
+                        case "medium":
+                            return "#fa8c16"; // Orange for medium
+                        default:
+                            return "#1890ff"; // Blue for low/no todos
+                    }
+                };
+
+                return (
+                    <Badge
+                        count={count}
+                        showZero
+                        style={{
+                            backgroundColor: count > 0 ? getBadgeColor(record.highest_todo_priority) : "#d9d9d9",
+                            color: "white",
+                            fontSize: 11,
+                            minWidth: 18,
+                            height: 18,
+                            lineHeight: "16px",
+                            borderRadius: 9,
+                        }}
+                    />
+                );
+            },
         },
         {
             title: "Health",

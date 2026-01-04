@@ -25,6 +25,8 @@ class ProjectController extends Controller
 
         $query = Project::query()->with(['manager:id,name', 'developer:id,name', 'developers:id,name', 'tags'])->withCount(['todos' => function ($q) {
             $q->where('status', '!=', 'completed');
+        }])->with(['todos' => function ($q) {
+            $q->where('status', '!=', 'completed')->select('project_id', 'priority');
         }]);
 
         // Filter by health status

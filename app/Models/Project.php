@@ -56,6 +56,28 @@ class Project extends Model
     }
 
     /**
+     * Get the highest priority from pending todos.
+     */
+    public function getHighestTodoPriorityAttribute(): ?string
+    {
+        $priorities = ['low', 'medium', 'high', 'critical'];
+        $priorityOrder = array_flip($priorities);
+
+        $highestPriority = null;
+        $highestOrder = -1;
+
+        foreach ($this->todos as $todo) {
+            $order = $priorityOrder[$todo->priority] ?? -1;
+            if ($order > $highestOrder) {
+                $highestOrder = $order;
+                $highestPriority = $todo->priority;
+            }
+        }
+
+        return $highestPriority;
+    }
+
+    /**
      * Clear dashboard cache when project status changes.
      */
     protected static function booted(): void
