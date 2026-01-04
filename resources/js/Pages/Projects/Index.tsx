@@ -416,7 +416,12 @@ export default function ProjectsIndex({
                         count={count}
                         showZero
                         style={{
-                            backgroundColor: count > 0 ? getBadgeColor(record.highest_todo_priority) : "#d9d9d9",
+                            backgroundColor:
+                                count > 0
+                                    ? getBadgeColor(
+                                          record.highest_todo_priority
+                                      )
+                                    : "#d9d9d9",
                             color: "white",
                             fontSize: 11,
                             minWidth: 18,
