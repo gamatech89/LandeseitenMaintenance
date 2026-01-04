@@ -16,6 +16,20 @@ class Project extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
+    protected $fillable = [
+        'name',
+        'url',
+        'client_email',
+        'notes',
+        'health_status',
+        'security_status',
+        'project_external_id',
+        'maintenance_id',
+        'health_check_secret',
+        'manager_id',
+        'developer_id',
+    ];
+
     protected $appends = ['highest_todo_priority'];
 
     protected function casts(): array
