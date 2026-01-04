@@ -1874,7 +1874,12 @@ export default function ProjectShow({
                                 key: "todos",
                                 label: (
                                     <Badge
-                                        count={project.todos?.length || 0}
+                                        count={
+                                            project.todos?.filter(
+                                                (todo) =>
+                                                    todo.status !== "completed"
+                                            ).length || 0
+                                        }
                                         offset={[10, 0]}
                                         size="small"
                                     >

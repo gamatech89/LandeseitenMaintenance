@@ -12,6 +12,7 @@ import {
     Modal,
     Form,
     Typography,
+    Badge,
     Divider,
     Tooltip,
     Avatar,
@@ -67,6 +68,7 @@ interface Project {
     developer: User | null;
     developers: User[];
     updated_at: string;
+    todos_count: number;
 }
 
 interface ProjectsIndexProps {
@@ -387,6 +389,27 @@ export default function ProjectsIndex({
                             </Text>
                         )}
                 </div>
+            ),
+        },
+        {
+            title: "Todos",
+            dataIndex: "todos_count",
+            key: "todos_count",
+            width: 80,
+            render: (count: number) => (
+                <Badge
+                    count={count}
+                    showZero
+                    style={{
+                        backgroundColor: count > 0 ? "#f59e0b" : "#d9d9d9",
+                        color: "white",
+                        fontSize: 11,
+                        minWidth: 18,
+                        height: 18,
+                        lineHeight: "16px",
+                        borderRadius: 9,
+                    }}
+                />
             ),
         },
         {

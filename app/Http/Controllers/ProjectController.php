@@ -23,7 +23,9 @@ class ProjectController extends Controller
     {
         Gate::authorize('viewAny', Project::class);
 
-        $query = Project::query()->with(['manager:id,name', 'developer:id,name', 'developers:id,name', 'tags']);
+        $query = Project::query()->with(['manager:id,name', 'developer:id,name', 'developers:id,name', 'tags'])->withCount(['todos' => function ($q) {
+            $q->where('status', '!=', 'completed');
+        }]);
 
         // Filter by health status
         if ($request->has('health') && $request->health !== 'all') {
