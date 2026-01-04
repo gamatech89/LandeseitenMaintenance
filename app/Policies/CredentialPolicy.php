@@ -41,7 +41,7 @@ class CredentialPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            return $project->developers()->where('user_id', $user->id)->exists();
         }
         
         // Viewers can see credentials but not edit
@@ -74,7 +74,7 @@ class CredentialPolicy
         }
         
         if ($user->role === 'developer') {
-            return $project->developer_id === $user->id;
+            return $project->developers()->where('user_id', $user->id)->exists();
         }
         
         return false;
