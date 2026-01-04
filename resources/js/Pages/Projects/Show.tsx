@@ -227,6 +227,13 @@ export default function ProjectShow({
     const isManager = auth.user.role === "manager";
     const isDeveloper = auth.user.role === "developer";
 
+    const canEditCredential = (credential: Credential) => {
+        if (isAdmin) return true;
+        if (isManager && project.manager?.id === auth.user.id) return true;
+        if (isDeveloper && project.developers?.some(dev => dev.id === auth.user.id)) return true;
+        return false;
+    };
+
     const [visiblePasswords, setVisiblePasswords] = useState<{
         [key: number]: boolean;
     }>({});
@@ -1060,29 +1067,33 @@ export default function ProjectShow({
                             onClick={() => handleOpenShareModal(record)}
                         />
                     </Tooltip>
-                    <Tooltip title="Edit">
-                        <Button
-                            type="text"
-                            size="small"
-                            icon={<EditOutlined />}
-                            onClick={() => handleEditCredential(record)}
-                        />
-                    </Tooltip>
-                    <Popconfirm
-                        title="Are you sure to delete this credential?"
-                        onConfirm={() => handleDeleteCredential(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                    >
-                        <Tooltip title="Delete">
+                    {canEditCredential(record) && (
+                        <Tooltip title="Edit">
                             <Button
                                 type="text"
                                 size="small"
-                                danger
-                                icon={<DeleteOutlined />}
+                                icon={<EditOutlined />}
+                                onClick={() => handleEditCredential(record)}
                             />
                         </Tooltip>
-                    </Popconfirm>
+                    )}
+                    {isManager && project.manager?.id === auth.user.id && (
+                        <Popconfirm
+                            title="Are you sure to delete this credential?"
+                            onConfirm={() => handleDeleteCredential(record.id)}
+                            okText="Yes"
+                            cancelText="No"
+                        >
+                            <Tooltip title="Delete">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                />
+                            </Tooltip>
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },
@@ -3111,7 +3122,10 @@ export default function ProjectShow({
                         <Input placeholder="https://..." />
                     </Form.Item>
                     <Form.Item name="note" label="Note">
-                        <Input.TextArea rows={3} placeholder="Additional notes..." />
+                        <Input.TextArea
+                            rows={3}
+                            placeholder="Additional notes..."
+                        />
                     </Form.Item>
                 </Form>
             </Modal>
