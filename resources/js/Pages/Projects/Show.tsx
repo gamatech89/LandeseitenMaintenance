@@ -487,6 +487,7 @@ export default function ProjectShow({
             password: values.password,
             url: values.url,
             metadata: Object.keys(metadata).length > 0 ? metadata : null,
+            note: values.note,
         };
 
         if (editingCredential) {
@@ -3108,6 +3109,9 @@ export default function ProjectShow({
                         ]}
                     >
                         <Input placeholder="https://..." />
+                    </Form.Item>
+                    <Form.Item name="note" label="Note">
+                        <Input.TextArea rows={3} placeholder="Additional notes..." />
                     </Form.Item>
                 </Form>
             </Modal>
