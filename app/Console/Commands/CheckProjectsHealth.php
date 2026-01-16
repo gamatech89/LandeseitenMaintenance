@@ -227,7 +227,7 @@ class CheckProjectsHealth extends Command
     }
 
     /**
-     * Check WordPress health via the LSM plugin endpoint.
+     * Check WordPress health via the RMB plugin endpoint.
      */
     private function checkWordPressHealth(Project $project): ?array
     {
@@ -237,9 +237,20 @@ class CheckProjectsHealth extends Command
 
         try {
             $baseUrl = rtrim($project->url, '/');
-            $healthUrl = "{$baseUrl}/wp-json/lsm/v1/health?key={$project->health_check_secret}";
             
-            $response = Http::timeout(10)->get($healthUrl);
+            // Try new RMB plugin first
+            $rmbUrl = "{$baseUrl}/wp-json/rmb/v1/health?key={$project->health_check_secret}";
+            $response = Http::timeout(10)->get($rmbUrl);
+            
+            if ($response->successful()) {
+                $data = $response->json();
+                // RMB returns nested data structure
+                return $data['data'] ?? $data;
+            }
+            
+            // Fallback to legacy LSM plugin
+            $lsmUrl = "{$baseUrl}/wp-json/lsm/v1/health?key={$project->health_check_secret}";
+            $response = Http::timeout(10)->get($lsmUrl);
             
             if ($response->successful()) {
                 return $response->json();

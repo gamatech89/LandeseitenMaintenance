@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -26,6 +27,14 @@ class User extends Authenticatable
         'password',
         'role',
         'last_login_at',
+        'hourly_rate',
+    ];
+
+    /**
+     * Default attribute values
+     */
+    protected $attributes = [
+        'hourly_rate' => 22.00,
     ];
 
     /**
@@ -99,5 +108,13 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Project::class, 'project_developer')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the tags assigned to this user.
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 }

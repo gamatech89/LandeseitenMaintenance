@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -24,14 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Handle HTTP exceptions with Inertia error pages
-        $exceptions->respond(function (Response $response) {
+        // Handle HTTP exceptions with Inertia error pages (only for web routes)
+        $exceptions->respond(function (Response $response, \Throwable $exception, \Illuminate\Http\Request $request) {
+            // Don't render Inertia pages for API routes - return JSON instead
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return $response;
+            }
+            
             if (in_array($response->getStatusCode(), [500, 503, 404, 403])) {
                 return Inertia::render('Error', ['status' => $response->getStatusCode()])
-                    ->toResponse(request())
+                    ->toResponse($request)
                     ->setStatusCode($response->getStatusCode());
             }
 
             return $response;
         });
     })->create();
+

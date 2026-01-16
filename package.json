@@ -1,36 +1,18 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "tsc && vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@headlessui/react": "^2.0.0",
-        "@inertiajs/react": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/vite": "^4.0.0",
-        "@types/node": "^22.12.0",
-        "@types/react": "^18.0.28",
-        "@types/react-dom": "^18.0.10",
-        "@vitejs/plugin-react": "^4.2.0",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.4.31",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "tailwindcss": "^3.2.1",
-        "typescript": "^5.0.2",
-        "vite": "^7.0.7"
-    },
-    "dependencies": {
-        "@ant-design/icons": "^6.1.0",
-        "@types/lodash": "^4.17.21",
-        "antd": "^5.29.3",
-        "dayjs": "^1.11.19",
-        "lodash": "^4.17.21"
-    }
+  "name": "lsm-platform",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run build:packages && cd apps/web && npm run dev",
+    "dev:api": "php artisan serve",
+    "build:packages": "cd packages/types && npm run build && cd ../utils && npm run build && cd ../api-client && npm run build",
+    "build:web": "npm run build:packages && cd apps/web && npm run build",
+    "clean": "rm -rf node_modules packages/*/node_modules apps/*/node_modules packages/*/dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
 }

@@ -16,6 +16,10 @@ class Resource extends Model
         'type',
         'url',
         'file_path',
+        'file_name',
+        'file_size',
+        'notes',
+        'is_quick_action',
     ];
 
     /**

@@ -14,17 +14,16 @@ class MaintenanceReport extends Model
         'type',
         'summary',
         'tasks_completed',
-        'updates_performed',
         'issues_found',
         'issues_resolved',
         'notes',
         'time_spent_minutes',
+        'invoice_id',
     ];
 
     protected $casts = [
         'report_date' => 'date',
         'tasks_completed' => 'array',
-        'updates_performed' => 'array',
         'issues_found' => 'array',
         'issues_resolved' => 'array',
     ];
@@ -37,6 +36,11 @@ class MaintenanceReport extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     /**

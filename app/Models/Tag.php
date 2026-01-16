@@ -30,4 +30,9 @@ class Tag extends Model
     {
         return $this->belongsToMany(Project::class)->withTimestamps();
     }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
+    }
 }

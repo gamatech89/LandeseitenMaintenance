@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -158,11 +158,43 @@ class Project extends Model
     }
 
     /**
+     * Get the support tickets for the project.
+     */
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    /**
      * Get the tags for the project.
      */
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Get the time entries for the project.
+     */
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    /**
+     * Update the tracked time for this project.
+     * Calculates total minutes from all completed time entries.
+     */
+    public function updateTrackedTime(): void
+    {
+        $totalMinutes = $this->timeEntries()
+            ->whereNotNull('ended_at')
+            ->sum('duration_minutes');
+
+        // Only update if the column exists (added via migration)
+        if (\Schema::hasColumn('projects', 'tracked_minutes')) {
+            $this->update(['tracked_minutes' => $totalMinutes]);
+        }
     }
 
     /**
