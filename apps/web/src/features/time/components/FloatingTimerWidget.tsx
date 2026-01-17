@@ -24,6 +24,7 @@ import {
   calculateElapsedSeconds,
   formatDuration,
 } from '@/stores/timer';
+import { useAuthStore } from '@/stores/auth';
 
 const { Text } = Typography;
 
@@ -60,6 +61,14 @@ export function FloatingTimerWidget() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const popupRef = useRef<HTMLDivElement>(null);
+
+  // Import auth store to check user role
+  const user = useAuthStore((state) => state.user);
+  
+  // Hide for admin users - they don't track time
+  if (user?.role === 'admin') {
+    return null;
+  }
   
   const {
     runningTimer,

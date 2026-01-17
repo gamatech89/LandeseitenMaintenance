@@ -53,6 +53,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/dashboard/stats', [V1\DashboardController::class, 'stats'])->name('dashboard.stats');
 
         // -------------------------------------------------
+        // AI CHAT (Admin only)
+        // -------------------------------------------------
+        Route::post('/ai/chat', [V1\AiChatController::class, 'chat'])
+            ->middleware('role:admin')
+            ->name('ai.chat');
+
+        // -------------------------------------------------
         // PROJECTS
         // -------------------------------------------------
         Route::apiResource('projects', V1\ProjectController::class);

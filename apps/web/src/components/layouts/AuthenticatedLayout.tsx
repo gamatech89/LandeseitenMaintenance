@@ -48,6 +48,7 @@ const { Text } = Typography;
 const FloatingTimerWidget = lazy(() => import('@/features/time/components/FloatingTimerWidget').then(m => ({ default: m.FloatingTimerWidget })));
 const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
 const NotificationsPopover = lazy(() => import('@/components/common/NotificationsPopover').then(m => ({ default: m.NotificationsPopover })));
+const AiChatPanel = lazy(() => import('@/components/chat/AiChatPanel').then(m => ({ default: m.AiChatPanel })));
 
 /**
  * Menu items for the sidebar - grouped by category
@@ -528,6 +529,7 @@ export function AuthenticatedLayout() {
           open={isAvailabilityModalOpen} 
           onClose={() => setIsAvailabilityModalOpen(false)} 
         />
+        <AiChatPanel />
       </Suspense>
 
       {/* Sidebar Styles */}

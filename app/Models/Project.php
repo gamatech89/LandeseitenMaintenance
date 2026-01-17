@@ -28,6 +28,7 @@ class Project extends Model
         'health_check_secret',
         'manager_id',
         'developer_id',
+        'is_maintenance',
     ];
 
     protected $appends = ['highest_todo_priority'];
