@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Table,
@@ -43,15 +44,9 @@ interface ActivityLog {
   created_at: string;
 }
 
-const subjectTypeOptions = [
-  { label: 'All Types', value: undefined },
-  { label: 'Project', value: 'Project' },
-  { label: 'Credential', value: 'Credential' },
-  { label: 'Todo', value: 'Todo' },
-  { label: 'User', value: 'User' },
-];
-
 export function ActivityPage() {
+  const { t } = useTranslation();
+
   const [filters, setFilters] = useState({
     page: 1,
     per_page: 20,
@@ -60,6 +55,14 @@ export function ActivityPage() {
     date_from: undefined as string | undefined,
     date_to: undefined as string | undefined,
   });
+
+  const subjectTypeOptions = [
+    { label: t('activity.types.all'), value: undefined },
+    { label: t('activity.types.project'), value: 'Project' },
+    { label: t('activity.types.credential'), value: 'Credential' },
+    { label: t('activity.types.todo'), value: 'Todo' },
+    { label: t('activity.types.user'), value: 'User' },
+  ];
 
   // Fetch activity logs
   const { data, isLoading, isError } = useQuery({
@@ -79,7 +82,7 @@ export function ActivityPage() {
 
   const columns: ColumnsType<ActivityLog> = [
     {
-      title: 'User',
+      title: t('activity.table.user'),
       key: 'user',
       width: 150,
       render: (_, record) => (
@@ -87,28 +90,28 @@ export function ActivityPage() {
           <Avatar size="small" style={{ backgroundColor: '#6366f1' }}>
             {record.causer?.name?.charAt(0) || '?'}
           </Avatar>
-          <Text>{record.causer?.name || 'System'}</Text>
+          <Text>{record.causer?.name || t('activity.types.system')}</Text>
         </Space>
       ),
     },
     {
-      title: 'Action',
+      title: t('activity.table.action'),
       dataIndex: 'description',
       key: 'description',
       render: (text) => <Text>{text || '-'}</Text>,
     },
     {
-      title: 'Subject',
+      title: t('activity.table.subject'),
       key: 'subject',
       width: 120,
       render: (_, record) => (
         <Tag color={getSubjectTypeColor(record.subject_type || '')}>
-          {record.subject_type || 'Unknown'}
+          {record.subject_type || t('activity.types.unknown')}
         </Tag>
       ),
     },
     {
-      title: 'Time',
+      title: t('activity.table.time'),
       key: 'time',
       width: 150,
       render: (_, record) => (
@@ -130,9 +133,9 @@ export function ActivityPage() {
           <Space>
             <HistoryOutlined style={{ fontSize: 24, color: '#6366f1' }} />
             <div>
-              <Title level={3} style={{ margin: 0 }}>Activity Log</Title>
+              <Title level={3} style={{ margin: 0 }}>{t('activity.title')}</Title>
               <Text type="secondary">
-                Audit trail of all system activities
+                {t('activity.subtitle')}
               </Text>
             </div>
           </Space>
@@ -140,11 +143,11 @@ export function ActivityPage() {
       </Row>
 
       {/* Filters */}
-      <Card style={{ marginBottom: 16, borderRadius: 12 }} bodyStyle={{ padding: 16 }}>
+      <Card style={{ marginBottom: 16, borderRadius: 12 }} styles={{ body: { padding: 16 } }}>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
             <Input
-              placeholder="Search activities..."
+              placeholder={t('activity.searchPlaceholder')}
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
@@ -157,7 +160,7 @@ export function ActivityPage() {
               value={filters.subject_type}
               onChange={(value) => setFilters(f => ({ ...f, subject_type: value, page: 1 }))}
               options={subjectTypeOptions}
-              placeholder="Subject Type"
+              placeholder={t('activity.subjectType')}
               allowClear
             />
           </Col>
@@ -178,13 +181,13 @@ export function ActivityPage() {
       </Card>
 
       {/* Table */}
-      <Card style={{ borderRadius: 12 }} bodyStyle={{ padding: 0 }}>
+      <Card style={{ borderRadius: 12 }} styles={{ body: { padding: 0 } }}>
         <Table
           columns={columns}
           dataSource={tableData}
           rowKey="id"
           loading={isLoading}
-          locale={{ emptyText: isError ? 'Failed to load activity' : 'No activity yet' }}
+          locale={{ emptyText: isError ? t('activity.loadError') : t('activity.noActivity') }}
           pagination={{
             current: currentPage,
             total: totalItems,

@@ -1,4 +1,5 @@
 import { Modal, Form, Input, Select, Typography, Row, Col, Space, message, App } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { 
   LockOutlined,
   GlobalOutlined,
@@ -17,21 +18,22 @@ interface AddCredentialModalProps {
   onClose: () => void;
 }
 
-const typeOptions = [
-  { label: 'WordPress', value: 'wordpress', icon: <GlobalOutlined /> },
-  { label: 'SSH', value: 'ssh', icon: <CloudServerOutlined /> },
-  { label: 'FTP', value: 'ftp', icon: <CloudServerOutlined /> },
-  { label: 'Database', value: 'database', icon: <DatabaseOutlined /> },
-  { label: 'Hosting', value: 'hosting', icon: <CloudServerOutlined /> },
-  { label: 'Email', value: 'email', icon: <UserOutlined /> },
-  { label: 'API Key', value: 'api', icon: <KeyOutlined /> },
-  { label: 'Other', value: 'other', icon: <LockOutlined /> },
-];
-
 export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const { message: antdMessage } = App.useApp ? App.useApp() : { message };
+
+  const typeOptions = [
+    { label: t('vault.types.wordpress'), value: 'wordpress', icon: <GlobalOutlined /> },
+    { label: t('vault.types.ssh'), value: 'ssh', icon: <CloudServerOutlined /> },
+    { label: t('vault.types.ftp'), value: 'ftp', icon: <CloudServerOutlined /> },
+    { label: t('vault.types.database'), value: 'database', icon: <DatabaseOutlined /> },
+    { label: t('vault.types.hosting'), value: 'hosting', icon: <CloudServerOutlined /> },
+    { label: t('vault.types.email'), value: 'email', icon: <UserOutlined /> },
+    { label: t('vault.types.apiKey'), value: 'api', icon: <KeyOutlined /> },
+    { label: t('vault.types.other'), value: 'other', icon: <LockOutlined /> },
+  ];
 
   // Fetch Projects for Selector
   const { data: projectsData, isLoading: isLoadingProjects } = useQuery({
@@ -43,27 +45,24 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
   // Create Mutation
   const createMutation = useMutation({
     mutationFn: (values: any) => {
-      // Extract metadata
       const { hostname, port, database_name, ...rest } = values;
       const metadata: any = {};
       if (hostname) metadata.hostname = hostname;
       if (port) metadata.port = port;
       if (database_name) metadata.database_name = database_name;
 
-      // Direct implementation using client
-      // backend expects POST /api/v1/projects/:id/credentials
       return apiClient.post(`/projects/${values.project_id}/credentials`, {
         ...rest,
         metadata: Object.keys(metadata).length > 0 ? metadata : null
       });
     },
     onSuccess: () => {
-      antdMessage.success('Credential added successfully');
+      antdMessage.success(t('vault.messages.created'));
       queryClient.invalidateQueries({ queryKey: ['vault'] });
       handleClose();
     },
     onError: () => {
-      antdMessage.error('Failed to add credential');
+      antdMessage.error(t('vault.messages.createError'));
     }
   });
 
@@ -74,10 +73,12 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
 
   return (
     <Modal
-      title="Add New Credential"
+      title={t('vault.addNewCredential')}
       open={open}
       onCancel={handleClose}
       onOk={() => form.submit()}
+      okText={t('common.save')}
+      cancelText={t('common.cancel')}
       confirmLoading={createMutation.isPending}
       width={600}
       centered
@@ -91,11 +92,11 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
           <Col span={12}>
             <Form.Item 
               name="project_id" 
-              label="Project" 
-              rules={[{ required: true, message: 'Please select a project' }]}
+              label={t('vault.form.project')} 
+              rules={[{ required: true, message: t('vault.form.selectRequired') }]}
             >
               <Select 
-                placeholder="Select Project" 
+                placeholder={t('vault.form.selectProject')} 
                 loading={isLoadingProjects}
                 showSearch
                 optionFilterProp="label"
@@ -106,10 +107,10 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
           <Col span={12}>
              <Form.Item 
               name="type" 
-              label="Type" 
-              rules={[{ required: true, message: 'Please select type' }]}
+              label={t('vault.table.type')} 
+              rules={[{ required: true, message: t('vault.form.typeRequired') }]}
              >
-                <Select placeholder="Select Type">
+                <Select placeholder={t('vault.form.selectType')}>
                    {typeOptions.map(opt => (
                       <Select.Option key={opt.value} value={opt.value}>
                          <Space>{opt.icon} {opt.label}</Space>
@@ -122,11 +123,11 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
 
         <Form.Item 
            name="title" 
-           label="Title" 
+           label={t('vault.form.title')} 
            rules={[{ required: true }]}
-           help="e.g., 'Production Server', 'Main DB User'"
+           help={t('vault.form.titleHelp')}
         >
-           <Input placeholder="Credential Title" />
+           <Input placeholder={t('vault.form.titlePlaceholder')} />
         </Form.Item>
 
         <Form.Item 
@@ -140,19 +141,19 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
                        {(type === 'ssh' || type === 'database' || type === 'ftp') && (
                           <Row gutter={16}>
                              <Col span={18}>
-                                <Form.Item name="hostname" label="Hostname / IP">
-                                   <Input placeholder="e.g. 192.168.1.1 or db.example.com" />
+                                <Form.Item name="hostname" label={t('vault.form.hostnameIp')}>
+                                   <Input placeholder={t('vault.form.hostnamePlaceholder')} />
                                 </Form.Item>
                              </Col>
                              <Col span={6}>
-                                <Form.Item name="port" label="Port">
+                                <Form.Item name="port" label={t('vault.form.port')}>
                                    <Input placeholder={type === 'ssh' ? '22' : '3306'} />
                                 </Form.Item>
                              </Col>
                           </Row>
                        )}
                        {type === 'database' && (
-                          <Form.Item name="database_name" label="Database Name">
+                          <Form.Item name="database_name" label={t('vault.form.databaseName')}>
                              <Input placeholder="my_app_db" />
                           </Form.Item>
                        )}
@@ -163,7 +164,7 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
 
         <Row gutter={16}>
            <Col span={12}>
-              <Form.Item name="username" label="Username / Login">
+              <Form.Item name="username" label={t('vault.form.usernameLogin')}>
                  <Input autoComplete="off" />
               </Form.Item>
            </Col>
@@ -178,10 +179,10 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
                   return (
                     <Form.Item 
                       name="password" 
-                      label={isApiKey ? "API Key" : "Password / API Key"}
+                      label={isApiKey ? t('vault.types.apiKey') : t('vault.form.passwordApiKey')}
                     >
                        <Input.Password 
-                          placeholder={isApiKey ? "Enter API key" : "Enter password"} 
+                          placeholder={isApiKey ? t('vault.form.apiKeyPlaceholder') : t('vault.form.passwordPlaceholder')} 
                           autoComplete="new-password" 
                        />
                     </Form.Item>
@@ -191,16 +192,14 @@ export function AddCredentialModal({ open, onClose }: AddCredentialModalProps) {
            </Col>
         </Row>
 
-        <Form.Item name="url" label="Login URL (Optional)">
-           <Input placeholder="https://..." />
+        <Form.Item name="url" label={t('vault.form.loginUrl')}>
+           <Input placeholder={t('vault.form.urlPlaceholder')} />
         </Form.Item>
 
-        <Form.Item name="note" label="Notes">
-           <TextArea rows={3} placeholder="Any additional instructions..." />
+        <Form.Item name="note" label={t('vault.form.notes')}>
+           <TextArea rows={3} placeholder={t('vault.form.notesPlaceholder')} />
         </Form.Item>
       </Form>
     </Modal>
   );
 }
-// Import App to safely use message hook
-

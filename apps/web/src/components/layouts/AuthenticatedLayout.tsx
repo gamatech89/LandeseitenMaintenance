@@ -7,11 +7,12 @@
  * - German/English i18n
  * - Grouped sidebar navigation
  * - Theme & language toggles in header
+ * - Responsive design (mobile drawer, tablet auto-collapse)
  */
 
-import { useState, Suspense, lazy, useCallback } from 'react';
+import { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Button, Typography, Space, Switch, Tooltip, AutoComplete, Tag, Input } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Typography, Space, Switch, Tooltip, AutoComplete, Tag, Input, Drawer } from 'antd';
 import {
   DashboardOutlined,
   ProjectOutlined,
@@ -45,6 +46,20 @@ import { api, apiClient } from '@/lib/api';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
+
+// Custom hook for responsive breakpoints
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => 
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 
 const FloatingTimerWidget = lazy(() => import('@/features/time/components/FloatingTimerWidget').then(m => ({ default: m.FloatingTimerWidget })));
 const SetAvailabilityModal = lazy(() => import('@/features/team/components/SetAvailabilityModal').then(m => ({ default: m.SetAvailabilityModal })));
@@ -96,7 +111,7 @@ function useMenuItems(): ItemType[] {
         {
           key: '/library',
           icon: <FolderOpenOutlined />,
-          label: <Link to="/library">Library</Link>,
+          label: <Link to="/library">{t('nav.library')}</Link>,
         },
         // Support Tickets - only for PM/Admin
         ...(canManageProjects ? [{
@@ -175,7 +190,7 @@ function useMenuItems(): ItemType[] {
         {
           key: '/settings',
           icon: <SettingOutlined />,
-          label: <Link to="/settings">Settings</Link>,
+          label: <Link to="/settings">{t('nav.settings')}</Link>,
         }
       );
     }
@@ -194,7 +209,10 @@ function useMenuItems(): ItemType[] {
 }
 
 export function AuthenticatedLayout() {
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -203,6 +221,16 @@ export function AuthenticatedLayout() {
   const { t, i18n } = useTranslation();
   const menuItems = useMenuItems();
   const isDark = resolvedTheme === 'dark';
+
+  // Auto-collapse on tablet
+  useEffect(() => {
+    if (isTablet) setCollapsed(true);
+  }, [isTablet]);
+
+  // Close drawer on navigation
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   // Header search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,70 +324,98 @@ export function AuthenticatedLayout() {
   const textColor = isDark ? '#F8FAFC' : '#1F1A23';
   const textSecondary = isDark ? '#94A3B8' : '#64748B';
 
-  return (
-    <Layout style={{ minHeight: '100vh', background: contentBg }}>
-      {/* Sidebar */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={260}
-        collapsedWidth={80}
+  // Sidebar content — shared between Sider and Drawer
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div
         style={{
-          background: sidebarBg,
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 100,
-          borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
-          boxShadow: isDark ? 'none' : '2px 0 12px rgba(0,0,0,0.05)',
+          height: 72,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
+          padding: (collapsed && !isMobile) ? 0 : '0 24px',
+          borderBottom: `1px solid rgba(255,255,255,0.08)`,
         }}
       >
-        {/* Logo */}
-        <div
+        {(collapsed && !isMobile) ? (
+          <img
+            src="/logo-landeseiten.svg"
+            alt="L"
+            style={{ width: 32, height: 32, objectFit: 'contain' }}
+          />
+        ) : (
+          <img
+            src="/logo-landeseiten.svg"
+            alt="Landeseiten"
+            style={{ height: 36, objectFit: 'contain' }}
+          />
+        )}
+      </div>
+
+      {/* Navigation Menu */}
+      <Menu
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        items={menuItems}
+        style={{
+          background: 'transparent',
+          borderRight: 0,
+          marginTop: 8,
+        }}
+        className="sidebar-menu"
+      />
+    </>
+  );
+
+  // Calculate sidebar width for desktop/tablet
+  const siderWidth = isMobile ? 0 : (collapsed ? 80 : 260);
+
+  return (
+    <Layout style={{ minHeight: '100vh', background: contentBg }}>
+      {/* Mobile: Drawer sidebar */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          width={280}
+          styles={{ body: { padding: 0, background: sidebarBg }, header: { display: 'none' } }}
+          style={{ zIndex: 1001 }}
+        >
+          <div style={{ height: '100%', background: sidebarBg }}>
+            {sidebarContent}
+          </div>
+        </Drawer>
+      )}
+
+      {/* Desktop/Tablet: Fixed Sider */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          width={260}
+          collapsedWidth={80}
           style={{
-            height: 72,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 24px',
-            borderBottom: `1px solid rgba(255,255,255,0.08)`,
+            background: sidebarBg,
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 100,
+            borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'transparent'}`,
+            boxShadow: isDark ? 'none' : '2px 0 12px rgba(0,0,0,0.05)',
           }}
         >
-          {collapsed ? (
-            <img
-              src="/logo-landeseiten.svg"
-              alt="L"
-              style={{ width: 32, height: 32, objectFit: 'contain' }}
-            />
-          ) : (
-            <img
-              src="/logo-landeseiten.svg"
-              alt="Landeseiten"
-              style={{ height: 36, objectFit: 'contain' }}
-            />
-          )}
-        </div>
-
-        {/* Navigation Menu */}
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          style={{
-            background: 'transparent',
-            borderRight: 0,
-            marginTop: 8,
-          }}
-          className="sidebar-menu"
-        />
-      </Sider>
+          {sidebarContent}
+        </Sider>
+      )}
 
       {/* Main Content Area */}
       <Layout 
         style={{ 
-          marginLeft: collapsed ? 80 : 260, 
+          marginLeft: siderWidth, 
           transition: 'margin-left 0.2s',
           background: contentBg,
         }}
@@ -367,8 +423,8 @@ export function AuthenticatedLayout() {
         {/* Header */}
         <Header
           style={{
-            padding: '0 24px',
-            height: 72,
+            padding: isMobile ? '0 12px' : '0 24px',
+            height: isMobile ? 56 : 72,
             background: headerBg,
             display: 'flex',
             alignItems: 'center',
@@ -382,8 +438,8 @@ export function AuthenticatedLayout() {
           <Space>
             <Button
               type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
+              icon={isMobile ? <MenuUnfoldOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
+              onClick={() => isMobile ? setDrawerOpen(true) : setCollapsed(!collapsed)}
               style={{ 
                 fontSize: 18, 
                 width: 44, 
@@ -393,32 +449,34 @@ export function AuthenticatedLayout() {
             />
           </Space>
 
-          <Space size={12}>
-            {/* Project Search */}
-            <AutoComplete
-              value={searchQuery}
-              options={searchOptions}
-              onSearch={handleSearch}
-              onSelect={handleSearchSelect}
-              placeholder={t('common.search')}
-              style={{ width: 280 }}
-              popupMatchSelectWidth={400}
-              notFoundContent={searchQuery.length >= 2 && !isSearching ? (
-                <div style={{ padding: '8px 12px', color: isDark ? '#94a3b8' : '#6b7280' }}>No projects found</div>
-              ) : null}
-            >
-              <Input
-                prefix={<SearchOutlined style={{ color: textSecondary, marginRight: 8 }} />}
-                style={{
-                  height: 40,
-                  borderRadius: 20,
-                  background: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                  border: 'none',
-                  paddingLeft: 16,
-                }}
-              />
-            </AutoComplete>
+          <Space size={isMobile ? 6 : 12}>
+            {/* Project Search — hidden on mobile */}
+            {!isMobile && (
+              <AutoComplete
+                value={searchQuery}
+                options={searchOptions}
+                onSearch={handleSearch}
+                onSelect={handleSearchSelect}
+                style={{ width: isTablet ? 180 : 280 }}
+                popupMatchSelectWidth={400}
+                notFoundContent={searchQuery.length >= 2 && !isSearching ? (
+                  <div style={{ padding: '8px 12px', color: isDark ? '#94a3b8' : '#6b7280' }}>{t('projects.noProjects')}</div>
+                ) : null}
+              >
+                <Input
+                  prefix={<SearchOutlined style={{ color: textSecondary }} />}
+                  placeholder={t('common.search')}
+                  className="header-search-input"
+                  style={{
+                    height: 40,
+                    borderRadius: 20,
+                    background: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                  }}
+                />
+              </AutoComplete>
+            )}
 
+            {/* Set Status — icon only on mobile */}
             <Button 
                 type="text" 
                 danger
@@ -426,21 +484,23 @@ export function AuthenticatedLayout() {
                 onClick={() => setIsAvailabilityModalOpen(true)}
                 style={{ borderRadius: 10, color: '#ef4444' }}
             >
-                Set Status
+                {!isMobile && t('availability.setStatus')}
             </Button>
 
             {/* Notifications */}
             <NotificationsPopover />
 
-            {/* Divider */}
-            <div style={{ 
-              width: 1, 
-              height: 24, 
-              background: borderColor,
-              margin: '0 4px',
-            }} />
+            {/* Divider — hidden on mobile */}
+            {!isMobile && (
+              <div style={{ 
+                width: 1, 
+                height: 24, 
+                background: borderColor,
+                margin: '0 4px',
+              }} />
+            )}
 
-            {/* Language Dropdown */}
+            {/* Language Dropdown — icon only on mobile */}
             <Dropdown
               menu={{
                 items: languageItems,
@@ -458,7 +518,7 @@ export function AuthenticatedLayout() {
                   borderRadius: 10,
                 }}
               >
-                {!collapsed && (i18n.language?.split('-')[0].toUpperCase() || 'EN')}
+                {!isMobile && !collapsed && (i18n.language?.split('-')[0].toUpperCase() || 'EN')}
               </Button>
             </Dropdown>
 
@@ -482,13 +542,13 @@ export function AuthenticatedLayout() {
                   cursor: 'pointer',
                   padding: '4px 8px',
                   borderRadius: 8,
-                  marginLeft: 8,
+                  marginLeft: isMobile ? 0 : 8,
                   transition: 'background 0.2s',
                 }}
                 className="user-dropdown-trigger"
               >
                 <Avatar
-                  size={36}
+                  size={isMobile ? 32 : 36}
                   style={{ 
                     background: 'linear-gradient(135deg, #6B21A8 0%, #A855F7 100%)',
                     fontWeight: 600,
@@ -497,27 +557,30 @@ export function AuthenticatedLayout() {
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>
-                <div style={{ lineHeight: 1.2 }}>
-                  <Text 
-                    strong 
-                    style={{ 
-                      display: 'block', 
-                      color: textColor,
-                      fontSize: 13,
-                    }}
-                  >
-                    {user?.name}
-                  </Text>
-                  <Text 
-                    style={{ 
-                      fontSize: 11, 
-                      color: textSecondary,
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {user?.role}
-                  </Text>
-                </div>
+                {/* Hide user text on mobile */}
+                {!isMobile && (
+                  <div style={{ lineHeight: 1.2 }}>
+                    <Text 
+                      strong 
+                      style={{ 
+                        display: 'block', 
+                        color: textColor,
+                        fontSize: 13,
+                      }}
+                    >
+                      {user?.name}
+                    </Text>
+                    <Text 
+                      style={{ 
+                        fontSize: 11, 
+                        color: textSecondary,
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {user?.role}
+                    </Text>
+                  </div>
+                )}
               </Space>
             </Dropdown>
           </Space>
@@ -526,8 +589,8 @@ export function AuthenticatedLayout() {
         {/* Page Content */}
         <Content
           style={{
-            margin: 24,
-            minHeight: 'calc(100vh - 72px - 48px)',
+            margin: isMobile ? 12 : (isTablet ? 16 : 24),
+            minHeight: `calc(100vh - ${isMobile ? 56 : 72}px - 48px)`,
           }}
         >
           <Outlet />
@@ -594,14 +657,13 @@ export function AuthenticatedLayout() {
           background: rgba(107, 33, 168, 0.1) !important;
         }
         
-        /* Search input styling - only in header */
-        .ant-layout-header .ant-input-affix-wrapper:not(.ant-input-password) {
+        /* Search input styling */
+        .header-search-input.ant-input-affix-wrapper {
           border: none !important;
           box-shadow: none !important;
         }
-        
-        .ant-layout-header .ant-input-affix-wrapper:not(.ant-input-password):focus,
-        .ant-layout-header .ant-input-affix-wrapper:not(.ant-input-password).ant-input-affix-wrapper-focused {
+        .header-search-input.ant-input-affix-wrapper:focus,
+        .header-search-input.ant-input-affix-wrapper.ant-input-affix-wrapper-focused {
           border: none !important;
           box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important;
         }
@@ -645,6 +707,22 @@ export function AuthenticatedLayout() {
         
         [data-theme="dark"] .ant-select-selection-item {
           color: #f8fafc !important;
+        }
+
+        /* Responsive overrides */
+        @media (max-width: 767px) {
+          .page-container {
+            padding: 0 !important;
+          }
+          .ant-layout-header {
+            padding: 0 12px !important;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1024px) {
+          .page-container {
+            padding: 0 !important;
+          }
         }
       `}</style>
     </Layout>

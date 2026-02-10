@@ -30,6 +30,7 @@ import {
   ProjectOutlined,
   RiseOutlined,
   FallOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Column, Pie } from '@ant-design/charts';
@@ -44,18 +45,11 @@ dayjs.extend(weekOfYear);
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const BRAND = {
-  deepPurple: '#440C71',
-  vibrantPurple: '#6B21A8',
-  teal: '#3AA68D',
-  lightPurple: '#A855F7',
-};
-
 // Color palette for charts
 const CHART_COLORS = [
-  BRAND.deepPurple,
-  BRAND.teal,
-  BRAND.vibrantPurple,
+  '#440C71',
+  '#6366f1',
+  '#6B21A8',
   '#F59E0B',
   '#EF4444',
   '#3B82F6',
@@ -111,22 +105,25 @@ export function AnalyticsPage() {
   const developerStats = calculateDeveloperStats(entriesData || []);
 
   return (
-    <div>
+    <div className="page-container">
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>{t('analytics.title')}</Title>
-          <Text type="secondary">{t('analytics.subtitle')}</Text>
-        </div>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <Space>
+          <BarChartOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>{t('analytics.title')}</Title>
+            <Text type="secondary">{t('analytics.subtitle')}</Text>
+          </div>
+        </Space>
         <Space>
           <RangePicker
             value={dateRange}
             onChange={(dates) => dates && setDateRange(dates as [Dayjs, Dayjs])}
             presets={[
-              { label: 'Last 7 days', value: [dayjs().subtract(7, 'days'), dayjs()] },
-              { label: 'Last 30 days', value: [dayjs().subtract(30, 'days'), dayjs()] },
-              { label: 'This Month', value: [dayjs().startOf('month'), dayjs()] },
-              { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+              { label: t('analytics.presets.last7'), value: [dayjs().subtract(7, 'days'), dayjs()] },
+              { label: t('analytics.presets.last30'), value: [dayjs().subtract(30, 'days'), dayjs()] },
+              { label: t('analytics.presets.thisMonth'), value: [dayjs().startOf('month'), dayjs()] },
+              { label: t('analytics.presets.lastMonth'), value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
             ]}
           />
         </Space>
@@ -139,22 +136,22 @@ export function AnalyticsPage() {
       ) : (
         <>
           {/* Summary Stats */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={12} sm={6}>
               <Card>
                 <Statistic
-                  title="Total Hours"
+                  title={t('analytics.totalHours')}
                   value={analytics.totalHours}
                   precision={1}
                   prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: BRAND.deepPurple }}
+                  valueStyle={{ color: '#6366f1' }}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6}>
               <Card>
                 <Statistic
-                  title="Total Entries"
+                  title={t('analytics.totalEntries')}
                   value={analytics.totalEntries}
                   prefix={<ProjectOutlined />}
                 />
@@ -163,37 +160,37 @@ export function AnalyticsPage() {
             <Col xs={12} sm={6}>
               <Card>
                 <Statistic
-                  title="Active Projects"
+                  title={t('analytics.activeProjects')}
                   value={analytics.activeProjects}
                   prefix={<TrophyOutlined />}
-                  valueStyle={{ color: BRAND.teal }}
+                  valueStyle={{ color: '#6366f1' }}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6}>
               <Card>
                 <Statistic
-                  title="Avg Hours/Day"
+                  title={t('analytics.avgHoursDay')}
                   value={analytics.avgHoursPerDay}
                   precision={1}
                   prefix={analytics.trend >= 0 ? <RiseOutlined /> : <FallOutlined />}
-                  valueStyle={{ color: analytics.trend >= 0 ? BRAND.teal : '#EF4444' }}
+                  valueStyle={{ color: analytics.trend >= 0 ? '#6366f1' : '#EF4444' }}
                 />
               </Card>
             </Col>
           </Row>
 
           {/* Charts Row */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             {/* Weekly Trend */}
             <Col xs={24} lg={14}>
-              <Card title="Weekly Trend" size="small">
+              <Card title={t('analytics.weeklyTrend')} size="small">
                 {weeklyData.length > 0 ? (
                   <Column
                     data={weeklyData}
                     xField="week"
                     yField="hours"
-                    color={BRAND.vibrantPurple}
+                    color="#6366f1"
                     height={280}
                     label={{
                       position: 'top',
@@ -201,20 +198,20 @@ export function AnalyticsPage() {
                       formatter: (datum: { hours: number }) => `${datum.hours.toFixed(1)}h`,
                     }}
                     xAxis={{ label: { autoRotate: false } }}
-                    yAxis={{ title: { text: 'Hours' } }}
+                    yAxis={{ title: { text: t('analytics.hours') } }}
                     tooltip={{
-                      formatter: (datum: { hours: number }) => ({ name: 'Hours', value: `${datum.hours.toFixed(1)}h` }),
+                      formatter: (datum: { hours: number }) => ({ name: t('analytics.hours'), value: `${datum.hours.toFixed(1)}h` }),
                     }}
                   />
                 ) : (
-                  <Empty description="No data for this period" />
+                  <Empty description={t('analytics.noData')} />
                 )}
               </Card>
             </Col>
 
             {/* Project Breakdown */}
             <Col xs={24} lg={10}>
-              <Card title="Time by Project" size="small">
+              <Card title={t('analytics.timeByProject')} size="small">
                 {projectBreakdown.length > 0 ? (
                   <Pie
                     data={projectBreakdown}
@@ -230,28 +227,29 @@ export function AnalyticsPage() {
                     }}
                     legend={{ position: 'bottom' }}
                     tooltip={{
-                      formatter: (datum: { hours: number }) => ({ name: 'Hours', value: `${datum.hours.toFixed(1)}h` }),
+                      formatter: (datum: { hours: number }) => ({ name: t('analytics.hours'), value: `${datum.hours.toFixed(1)}h` }),
                     }}
                   />
                 ) : (
-                  <Empty description="No data for this period" />
+                  <Empty description={t('analytics.noData')} />
                 )}
               </Card>
             </Col>
           </Row>
 
           {/* Developer Stats */}
-          <Row gutter={16}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
-              <Card title="Team Leaderboard" size="small">
+              <Card title={t('analytics.teamLeaderboard')} size="small">
                 <Table
+                  scroll={{ x: 500 }}
                   dataSource={developerStats}
                   rowKey="userId"
                   pagination={false}
                   size="small"
                   columns={[
                     {
-                      title: 'Developer',
+                      title: t('analytics.table.developer'),
                       dataIndex: 'name',
                       key: 'name',
                       render: (name: string, _: unknown, index: number) => (
@@ -262,20 +260,20 @@ export function AnalyticsPage() {
                       ),
                     },
                     {
-                      title: 'Hours',
+                      title: t('analytics.table.hours'),
                       dataIndex: 'hours',
                       key: 'hours',
-                      render: (hours: number) => <Tag color={BRAND.vibrantPurple}>{hours.toFixed(1)}h</Tag>,
+                      render: (hours: number) => <Tag color="purple">{hours.toFixed(1)}h</Tag>,
                       sorter: (a: { hours: number }, b: { hours: number }) => b.hours - a.hours,
                       defaultSortOrder: 'descend',
                     },
                     {
-                      title: 'Entries',
+                      title: t('analytics.table.entries'),
                       dataIndex: 'entries',
                       key: 'entries',
                     },
                     {
-                      title: 'Avg/Entry',
+                      title: t('analytics.table.avgPerEntry'),
                       key: 'avg',
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       render: (_: any, record: any) => 
@@ -287,7 +285,7 @@ export function AnalyticsPage() {
             </Col>
 
             <Col xs={24} lg={12}>
-              <Card title="Project Distribution" size="small">
+              <Card title={t('analytics.projectDistribution')} size="small">
                 {projectBreakdown.slice(0, 5).map((project, index) => (
                   <div key={project.project} style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -302,7 +300,7 @@ export function AnalyticsPage() {
                   </div>
                 ))}
                 {projectBreakdown.length === 0 && (
-                  <Empty description="No data for this period" />
+                  <Empty description={t('analytics.noData')} />
                 )}
               </Card>
             </Col>

@@ -6,6 +6,7 @@
  */
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Typography, Switch, Select, InputNumber, Form, Button, Row, Col, Space, Divider, App, Spin, Alert, Tag } from 'antd';
 import {
   SettingOutlined,
@@ -53,13 +54,6 @@ const driverIcons: Record<string, React.ReactNode> = {
   gdrive: <GoogleOutlined />,
 };
 
-const driverLabels: Record<string, string> = {
-  local: 'Local Storage (Server)',
-  s3: 'Amazon S3',
-  gcs: 'Google Cloud Storage',
-  gdrive: 'Google Drive',
-};
-
 export function SettingsPage() {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
@@ -68,6 +62,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -86,7 +81,7 @@ export function SettingsPage() {
     enabled: isAdmin,
   });
 
-  // Fetch backup config (storage location, schedule, retention, defaults)
+  // Fetch backup config
   const { data: backupConfig, isLoading: loadingBackupConfig } = useQuery<BackupConfig>({
     queryKey: ['backup-settings'],
     queryFn: () => apiClient.get('/backups/settings').then(r => r.data?.data || r.data),
@@ -125,11 +120,11 @@ export function SettingsPage() {
       return apiClient.put('/settings', payload);
     },
     onSuccess: () => {
-      message.success('Settings saved successfully');
+      message.success(t('settings.saveSuccess'));
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Failed to save settings');
+      message.error(error.response?.data?.message || t('settings.saveError'));
     },
   });
 
@@ -142,8 +137,8 @@ export function SettingsPage() {
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Alert
           type="error"
-          message="Access Denied"
-          description="You don't have permission to access this page."
+          message={t('settings.accessDenied')}
+          description={t('settings.noPermission')}
         />
       </div>
     );
@@ -162,8 +157,8 @@ export function SettingsPage() {
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Alert
           type="error"
-          message="Failed to load settings"
-          description="Please try refreshing the page."
+          message={t('settings.loadError')}
+          description={t('settings.loadErrorHint')}
         />
       </div>
     );
@@ -177,17 +172,21 @@ export function SettingsPage() {
   const inputHeight = 40;
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
-      <Space direction="vertical" style={{ width: '100%', marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0 }}>
-          <SettingOutlined style={{ marginRight: 12 }} />
-          Settings
-        </Title>
-        <Text type="secondary">
-          Configure global application settings. Changes apply immediately.
-        </Text>
-      </Space>
+    <div className="page-container">
+      {/* Page Header — consistent with other pages */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Space>
+            <SettingOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+            <div>
+              <Title level={3} style={{ margin: 0 }}>{t('settings.title')}</Title>
+              <Text type="secondary">{t('settings.subtitle')}</Text>
+            </div>
+          </Space>
+        </Col>
+      </Row>
 
+      {/* Settings Form — two column grid */}
       <Form
         form={form}
         layout="vertical"
@@ -201,238 +200,239 @@ export function SettingsPage() {
           'backup.retention_days': 30,
         }}
       >
-        {/* Uptime Monitoring Settings */}
-        <Card
-          title={
-            <Space>
-              <ThunderboltOutlined style={{ color: '#f59e0b' }} />
-              <span>Uptime Monitoring</span>
-            </Space>
-          }
-          style={{ ...cardStyle, marginBottom: 24 }}
-        >
-          <Row gutter={[24, 16]}>
-            <Col xs={24} md={12}>
+        <Row gutter={24}>
+          {/* Left Column — Uptime Monitoring */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <Space>
+                  <ThunderboltOutlined style={{ color: '#f59e0b' }} />
+                  <span>{t('settings.uptime.title')}</span>
+                </Space>
+              }
+              style={{ ...cardStyle, marginBottom: 24 }}
+            >
               <Form.Item
                 name="uptime.enabled"
-                label="Automatic Monitoring"
+                label={t('settings.uptime.enabled')}
                 valuePropName="checked"
-                tooltip={{ title: "Enable or disable automatic uptime checks for all projects", color: isDark ? '#334155' : undefined }}
+                tooltip={{ title: t('settings.uptime.enabledTooltip'), color: isDark ? '#334155' : undefined }}
               >
                 <Switch
-                  checkedChildren="Enabled"
-                  unCheckedChildren="Disabled"
+                  checkedChildren={t('settings.uptime.enabledOn')}
+                  unCheckedChildren={t('settings.uptime.enabledOff')}
                 />
               </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
+
               <Form.Item
                 name="uptime.interval"
-                label="Check Interval"
-                tooltip={{ title: "How often to check sites (in minutes)", color: isDark ? '#334155' : undefined }}
+                label={t('settings.uptime.interval')}
+                tooltip={{ title: t('settings.uptime.intervalTooltip'), color: isDark ? '#334155' : undefined }}
               >
                 <Select
                   style={{ height: inputHeight }}
                   options={[
-                    { value: 1, label: 'Every 1 minute' },
-                    { value: 2, label: 'Every 2 minutes' },
-                    { value: 3, label: 'Every 3 minutes' },
-                    { value: 5, label: 'Every 5 minutes (Recommended)' },
-                    { value: 10, label: 'Every 10 minutes' },
-                    { value: 15, label: 'Every 15 minutes' },
-                    { value: 30, label: 'Every 30 minutes' },
+                    { value: 1, label: t('settings.uptime.intervalOptions.min1') },
+                    { value: 2, label: t('settings.uptime.intervalOptions.min2') },
+                    { value: 3, label: t('settings.uptime.intervalOptions.min3') },
+                    { value: 5, label: t('settings.uptime.intervalOptions.min5') },
+                    { value: 10, label: t('settings.uptime.intervalOptions.min10') },
+                    { value: 15, label: t('settings.uptime.intervalOptions.min15') },
+                    { value: 30, label: t('settings.uptime.intervalOptions.min30') },
                   ]}
                 />
               </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="uptime.concurrency"
-                label="Concurrency"
-                tooltip={{ title: "Number of sites to check simultaneously", color: isDark ? '#334155' : undefined }}
-              >
-                <InputNumber
-                  min={1}
-                  max={50}
-                  style={{ width: '100%', height: inputHeight }}
-                  addonAfter="sites at once"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="uptime.timeout"
-                label="Request Timeout"
-                tooltip={{ title: "How long to wait for a response before marking site as down", color: isDark ? '#334155' : undefined }}
-              >
-                <InputNumber
-                  min={5}
-                  max={60}
-                  style={{ width: '100%', height: inputHeight }}
-                  addonAfter="seconds"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            Tip: For ~200 sites with concurrency of 15 and 5-minute interval, checks complete in ~2-3 minutes.
-          </Text>
-        </Card>
 
-        {/* Backup Settings - Full Configuration */}
-        <Card
-          title={
-            <Space>
-              <CloudOutlined style={{ color: '#3b82f6' }} />
-              <span>Backup Settings</span>
-            </Space>
-          }
-          style={{ ...cardStyle, marginBottom: 24 }}
-          loading={loadingBackupConfig}
-        >
-          {/* Storage Location (read-only, from config) */}
-          {backupConfig && (
-            <>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>Storage Location</Text>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-                {backupConfig.available_drivers.map((driver) => (
-                  <Card
-                    key={driver}
-                    size="small"
-                    style={{
-                      width: 180,
-                      cursor: 'default',
-                      borderColor: backupConfig.driver === driver ? '#1890ff' : undefined,
-                      background: backupConfig.driver === driver ? (isDark ? '#1e3a5f' : '#e6f7ff') : undefined,
-                    }}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="uptime.concurrency"
+                    label={t('settings.uptime.concurrency')}
+                    tooltip={{ title: t('settings.uptime.concurrencyTooltip'), color: isDark ? '#334155' : undefined }}
                   >
-                    <Space>
-                      {driverIcons[driver]}
-                      <div>
-                        <Text strong style={{ display: 'block' }}>{driverLabels[driver] || driver}</Text>
-                        {backupConfig.driver === driver && (
-                          <Tag color="blue" style={{ marginTop: 4 }}>Active</Tag>
-                        )}
-                      </div>
-                    </Space>
-                  </Card>
-                ))}
-              </div>
-              <Alert
-                type="info"
-                message="Storage driver is configured via environment variables (.env). Change BACKUP_DRIVER to switch."
-                style={{ marginBottom: 20, borderRadius: 8 }}
-                showIcon
-              />
-              <Divider />
-            </>
-          )}
+                    <InputNumber
+                      min={1}
+                      max={50}
+                      style={{ width: '100%', height: inputHeight }}
+                      addonAfter={t('settings.uptime.concurrencyUnit')}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="uptime.timeout"
+                    label={t('settings.uptime.timeout')}
+                    tooltip={{ title: t('settings.uptime.timeoutTooltip'), color: isDark ? '#334155' : undefined }}
+                  >
+                    <InputNumber
+                      min={5}
+                      max={60}
+                      style={{ width: '100%', height: inputHeight }}
+                      addonAfter={t('settings.uptime.timeoutUnit')}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          {/* Editable settings */}
-          <Row gutter={[24, 16]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="backup.default_frequency"
-                label="Default Frequency"
-                tooltip={{ title: "Default backup frequency for new projects", color: isDark ? '#334155' : undefined }}
-              >
-                <Select
-                  style={{ height: inputHeight }}
-                  options={[
-                    { value: 'daily', label: 'Daily' },
-                    { value: 'weekly', label: 'Weekly' },
-                    { value: 'monthly', label: 'Monthly' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="backup.retention_days"
-                label="Retention Period"
-                tooltip={{ title: "How long to keep backups before automatic deletion", color: isDark ? '#334155' : undefined }}
-              >
-                <InputNumber
-                  min={1}
-                  max={365}
-                  style={{ width: '100%', height: inputHeight }}
-                  addonAfter="days"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('settings.uptime.tip')}
+              </Text>
+            </Card>
+          </Col>
 
-          {/* Read-only config summary */}
-          {backupConfig && (
-            <>
-              <Divider />
-              <Row gutter={[24, 16]}>
-                {/* Schedule Status */}
-                <Col xs={24} md={12}>
+          {/* Right Column — Backup Settings */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <Space>
+                  <CloudOutlined style={{ color: '#3b82f6' }} />
+                  <span>{t('settings.backup.title')}</span>
+                </Space>
+              }
+              style={{ ...cardStyle, marginBottom: 24 }}
+              loading={loadingBackupConfig}
+            >
+              {/* Storage Location (read-only) */}
+              {backupConfig && (
+                <>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('settings.backup.storageLocation')}</Text>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {backupConfig.available_drivers.map((driver) => (
+                      <Card
+                        key={driver}
+                        size="small"
+                        style={{
+                          flex: '1 1 0',
+                          minWidth: 110,
+                          cursor: 'default',
+                          borderColor: backupConfig.driver === driver ? '#1890ff' : undefined,
+                          background: backupConfig.driver === driver ? (isDark ? '#1e3a5f' : '#e6f7ff') : undefined,
+                        }}
+                        styles={{ body: { padding: '8px 10px' } }}
+                      >
+                        <Space size={6}>
+                          {driverIcons[driver]}
+                          <div>
+                            <Text strong style={{ display: 'block', fontSize: 12 }}>{t(`settings.drivers.${driver}`, { defaultValue: driver })}</Text>
+                            {backupConfig.driver === driver && (
+                              <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>{t('settings.backup.active')}</Tag>
+                            )}
+                          </div>
+                        </Space>
+                      </Card>
+                    ))}
+                  </div>
+                  <Alert
+                    type="info"
+                    message={t('settings.backup.storageDriverInfo')}
+                    style={{ marginBottom: 16, borderRadius: 8, fontSize: 12 }}
+                    showIcon
+                  />
+                  <Divider style={{ margin: '12px 0' }} />
+                </>
+              )}
+
+              {/* Editable settings */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="backup.default_frequency"
+                    label={t('settings.backup.defaultFrequency')}
+                    tooltip={{ title: t('settings.backup.frequencyTooltip'), color: isDark ? '#334155' : undefined }}
+                  >
+                    <Select
+                      style={{ height: inputHeight }}
+                      options={[
+                        { value: 'daily', label: t('settings.backup.daily') },
+                        { value: 'weekly', label: t('settings.backup.weekly') },
+                        { value: 'monthly', label: t('settings.backup.monthly') },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="backup.retention_days"
+                    label={t('settings.backup.retentionPeriod')}
+                    tooltip={{ title: t('settings.backup.retentionTooltip'), color: isDark ? '#334155' : undefined }}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={365}
+                      style={{ width: '100%', height: inputHeight }}
+                      addonAfter={t('settings.backup.retentionUnit')}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Read-only config summary */}
+              {backupConfig && (
+                <>
+                  <Divider style={{ margin: '12px 0' }} />
+                  {/* Schedule Status */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <Text strong>Scheduled Backups</Text>
+                      <Text strong>{t('settings.backup.scheduledBackups')}</Text>
                       <Tag color={backupConfig.schedule.enabled ? 'green' : 'default'}>
-                        {backupConfig.schedule.enabled ? 'Enabled' : 'Disabled'}
+                        {backupConfig.schedule.enabled ? t('settings.uptime.enabledOn') : t('settings.uptime.enabledOff')}
                       </Tag>
                     </div>
                     <Space size={24}>
                       <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>Frequency</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>{t('settings.backup.frequency')}</Text>
                         <div style={{ textTransform: 'capitalize' }}>
                           <Text strong>{backupConfig.schedule.frequency}</Text>
                         </div>
                       </div>
                       <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>Time</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>{t('settings.backup.time')}</Text>
                         <div>
                           <Text strong>{backupConfig.schedule.time}</Text>
                         </div>
                       </div>
                     </Space>
                   </div>
-                </Col>
 
-                {/* Retention Policy */}
-                <Col xs={24} md={12}>
+                  {/* Retention Policy */}
                   <div style={{ marginBottom: 16 }}>
-                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Retention Policy</Text>
-                    <Space size={24}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('settings.backup.retentionPolicy')}</Text>
+                    <Space size={20}>
                       <div>
-                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Max Backups</Text>
-                        <Text strong style={{ fontSize: 18 }}>{backupConfig.retention.max_backups}</Text>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>{t('settings.backup.maxBackups')}</Text>
+                        <Text strong style={{ fontSize: 16 }}>{backupConfig.retention.max_backups}</Text>
                       </div>
                       <div>
-                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Max Age</Text>
-                        <Text strong style={{ fontSize: 18 }}>{backupConfig.retention.max_age_days || '∞'} days</Text>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>{t('settings.backup.maxAge')}</Text>
+                        <Text strong style={{ fontSize: 16 }}>{backupConfig.retention.max_age_days || '∞'} {t('settings.backup.retentionUnit')}</Text>
                       </div>
                       <div>
-                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Min Keep</Text>
-                        <Text strong style={{ fontSize: 18 }}>{backupConfig.retention.min_backups}</Text>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>{t('settings.backup.minKeep')}</Text>
+                        <Text strong style={{ fontSize: 16 }}>{backupConfig.retention.min_backups}</Text>
                       </div>
                     </Space>
                   </div>
-                </Col>
-              </Row>
 
-              {/* Default Contents */}
-              <div>
-                <Text strong style={{ display: 'block', marginBottom: 8 }}>Default Backup Contents</Text>
-                <Space>
-                  <Tag color={backupConfig.defaults.includes_database ? 'green' : 'default'}>
-                    Database {backupConfig.defaults.includes_database ? '✓' : '✗'}
-                  </Tag>
-                  <Tag color={backupConfig.defaults.includes_files ? 'green' : 'default'}>
-                    Files {backupConfig.defaults.includes_files ? '✓' : '✗'}
-                  </Tag>
-                  <Tag color={backupConfig.defaults.includes_uploads ? 'green' : 'default'}>
-                    Uploads {backupConfig.defaults.includes_uploads ? '✓' : '✗'}
-                  </Tag>
-                </Space>
-              </div>
-            </>
-          )}
-        </Card>
+                  {/* Default Contents */}
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('settings.backup.defaultContents')}</Text>
+                    <Space size={4}>
+                      <Tag color={backupConfig.defaults.includes_database ? 'green' : 'default'}>
+                        {t('settings.backup.database')} {backupConfig.defaults.includes_database ? '✓' : '✗'}
+                      </Tag>
+                      <Tag color={backupConfig.defaults.includes_files ? 'green' : 'default'}>
+                        {t('settings.backup.files')} {backupConfig.defaults.includes_files ? '✓' : '✗'}
+                      </Tag>
+                      <Tag color={backupConfig.defaults.includes_uploads ? 'green' : 'default'}>
+                        {t('settings.backup.uploads')} {backupConfig.defaults.includes_uploads ? '✓' : '✗'}
+                      </Tag>
+                    </Space>
+                  </div>
+                </>
+              )}
+            </Card>
+          </Col>
+        </Row>
 
         {/* Save Button */}
         <Row justify="end">
@@ -444,7 +444,7 @@ export function SettingsPage() {
                 queryClient.invalidateQueries({ queryKey: ['settings'] });
               }}
             >
-              Reset
+              {t('settings.reset')}
             </Button>
             <Button
               type="primary"
@@ -452,7 +452,7 @@ export function SettingsPage() {
               icon={<SaveOutlined />}
               loading={saveMutation.isPending}
             >
-              Save Settings
+              {t('settings.saveSettings')}
             </Button>
           </Space>
         </Row>

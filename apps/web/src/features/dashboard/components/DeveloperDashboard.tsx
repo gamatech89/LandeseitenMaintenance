@@ -62,7 +62,7 @@ export function DeveloperDashboard() {
           {getGreeting()}, {user?.name?.split(' ')[0]}! 👨‍💻
         </Title>
         <Text type="secondary" style={{ fontSize: 15 }}>
-          Ready to build something amazing today?
+          {t('dashboard.developerSubtitle')}
         </Text>
       </div>
 
@@ -83,31 +83,30 @@ export function DeveloperDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
              {/* Key Personal Stats */}
             <GlassStatCard
-              title="Hours Today"
+              title={t('dashboard.hoursToday')}
               value={timerStats?.formatted_total || '0h 0m'} 
               icon={<ClockCircleOutlined />}
               color="#6366f1"
-              // Trend removed as backend doesn't provide it yet
             />
             
             <GlassStatCard
-              title="Assigned Tasks"
+              title={t('dashboard.assignedTasks')}
               value={myTodos?.length || '0'}
               icon={<CheckCircleOutlined />}
               color="#22c55e"
-              suffix={`${highPriorityCount} high priority`}
+              suffix={t('dashboard.highPriority', { count: highPriorityCount })}
             />
 
             {/* Quick Project Links */}
              <Card
                 title={
                   <Space>
-                    <ProjectOutlined style={{ color: '#A855F7' }} />
-                    <span>My Active Projects</span>
+                    <ProjectOutlined style={{ color: '#6366f1' }} />
+                    <span>{t('dashboard.myActiveProjects')}</span>
                   </Space>
                 }
                 style={{ borderRadius: 16, border: 'none', marginTop: 8 }}
-                bodyStyle={{ padding: 0 }}
+                styles={{ body: { padding: 0 } }}
              >
                 {/* Real project list */}
                 {activeProjects?.slice(0, 5).map((project: any, i: number) => (
@@ -132,7 +131,7 @@ export function DeveloperDashboard() {
                 
                 {(!activeProjects || activeProjects.length === 0) && (
                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-                     No active projects found
+                     {t('dashboard.noActiveProjects')}
                    </div>
                 )}
              </Card>

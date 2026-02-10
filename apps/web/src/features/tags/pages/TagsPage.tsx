@@ -128,7 +128,7 @@ export function TagsPage() {
 
   const columns: ColumnsType<TagType> = [
     {
-      title: 'Tag',
+      title: t('tags.table.tag'),
       key: 'tag',
       render: (_, record) => (
         <Tag color={record.color || 'default'} style={{ margin: 0 }}>
@@ -137,21 +137,21 @@ export function TagsPage() {
       ),
     },
     {
-      title: 'Slug',
+      title: t('tags.table.slug'),
       dataIndex: 'slug',
       key: 'slug',
       render: (slug) => <Text code>{slug}</Text>,
     },
     {
-      title: 'Projects',
+      title: t('tags.table.projects'),
       key: 'projects',
       width: 100,
       render: (_, record) => (
-        <Text type="secondary">{record.projects_count || 0} projects</Text>
+        <Text type="secondary">{record.projects_count || 0} {t('tags.table.projects').toLowerCase()}</Text>
       ),
     },
     {
-      title: 'Actions',
+      title: t('tags.table.actions'),
       key: 'actions',
       width: 100,
       render: (_, record) => (
@@ -182,9 +182,9 @@ export function TagsPage() {
           <Space>
             <TagsOutlined style={{ fontSize: 24, color: '#6366f1' }} />
             <div>
-              <Title level={3} style={{ margin: 0 }}>Tags</Title>
+              <Title level={3} style={{ margin: 0 }}>{t('tags.title')}</Title>
               <Text type="secondary">
-                Organize projects with tags
+                {t('tags.subtitle')}
               </Text>
             </div>
           </Space>
@@ -200,13 +200,13 @@ export function TagsPage() {
               setShowModal(true);
             }}
           >
-            New Tag
+            {t('tags.newTag')}
           </Button>
         </Col>
       </Row>
 
       {/* Table */}
-      <Card style={{ borderRadius: 12 }} bodyStyle={{ padding: 0 }}>
+      <Card style={{ borderRadius: 12 }} styles={{ body: { padding: 0 } }}>
         <Table
           columns={columns}
           dataSource={data || []}
@@ -218,7 +218,7 @@ export function TagsPage() {
 
       {/* Create/Edit Modal */}
       <Modal
-        title={editingTag ? 'Edit Tag' : 'Create Tag'}
+        title={editingTag ? t('tags.editTag') : t('tags.createTag')}
         open={showModal}
         onCancel={() => {
           setShowModal(false);
@@ -236,28 +236,28 @@ export function TagsPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter tag name' }]}
+            label={t('tags.form.name')}
+            rules={[{ required: true, message: t('tags.form.nameRequired') }]}
           >
-            <Input placeholder="Tag name" />
+            <Input placeholder={t('tags.form.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="color"
-            label="Color"
+            label={t('tags.form.color')}
           >
             <ColorPicker format="hex" showText />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Space style={{ float: 'right' }}>
-              <Button onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button onClick={() => setShowModal(false)}>{t('common.cancel')}</Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={createMutation.isPending || updateMutation.isPending}
               >
-                {editingTag ? 'Update' : 'Create'}
+                {editingTag ? t('common.update') : t('common.create')}
               </Button>
             </Space>
           </Form.Item>

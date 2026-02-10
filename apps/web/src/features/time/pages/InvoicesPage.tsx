@@ -42,12 +42,6 @@ import { api } from '@/lib/api';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const BRAND = {
-  deepPurple: '#440C71',
-  vibrantPurple: '#6B21A8',
-  teal: '#3AA68D',
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Invoice = any;
 
@@ -111,7 +105,7 @@ export function InvoicesPage() {
   const handleExportCSV = () => {
     const invoices = invoicesData || [];
     if (invoices.length === 0) {
-      message.warning('No invoices to export');
+      message.warning(t('invoices.messages.noExport'));
       return;
     }
 
@@ -139,7 +133,7 @@ export function InvoicesPage() {
     link.click();
     URL.revokeObjectURL(link.href);
 
-    message.success('Invoices exported to CSV');
+    message.success(t('invoices.messages.exported'));
   };
 
   // Fetch invoice details
@@ -160,12 +154,12 @@ export function InvoicesPage() {
       return r.data;
     },
     onSuccess: () => {
-      message.success('Invoice approved!');
+      message.success(t('invoices.messages.approved'));
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
-      message.error(err.response?.data?.message || err.message || 'Failed to approve');
+      message.error(err.response?.data?.message || err.message || t('invoices.messages.approveError'));
     },
   });
 
@@ -176,12 +170,12 @@ export function InvoicesPage() {
       return r.data;
     },
     onSuccess: () => {
-      message.success('Invoice declined');
+      message.success(t('invoices.messages.declined'));
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
-      message.error(err.response?.data?.message || err.message || 'Failed to decline');
+      message.error(err.response?.data?.message || err.message || t('invoices.messages.declineError'));
     },
   });
 
@@ -192,12 +186,12 @@ export function InvoicesPage() {
       return r.data;
     },
     onSuccess: () => {
-      message.success('Invoice marked as paid!');
+      message.success(t('invoices.messages.paid'));
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setDetailsOpen(false);
     },
     onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
-      message.error(err.response?.data?.message || err.message || 'Failed to mark as paid');
+      message.error(err.response?.data?.message || err.message || t('invoices.messages.paidError'));
     },
   });
 
@@ -217,22 +211,22 @@ export function InvoicesPage() {
   // Table columns - with defensive null checks
   const columns = [
     {
-      title: 'Invoice #',
+      title: t('invoices.table.invoiceNumber'),
       dataIndex: 'invoice_number',
       key: 'invoice_number',
       render: (num: string | null | undefined) => (
         <Space>
-          <FileTextOutlined style={{ color: BRAND.vibrantPurple }} />
+          <FileTextOutlined style={{ color: '#6366f1' }} />
           <Text strong>{num || '-'}</Text>
         </Space>
       ),
     },
     {
-      title: 'Developer',
+      title: t('invoices.table.developer'),
       key: 'user',
       render: (_: unknown, record: Invoice) => (
         <Space>
-          <Avatar size="small" style={{ backgroundColor: BRAND.vibrantPurple }} icon={<UserOutlined />}>
+          <Avatar size="small" style={{ backgroundColor: '#6366f1' }} icon={<UserOutlined />}>
             {record?.user?.name?.charAt?.(0) || '?'}
           </Avatar>
           <Text>{record?.user?.name || 'Unknown'}</Text>
@@ -240,7 +234,7 @@ export function InvoicesPage() {
       ),
     },
     {
-      title: 'Period',
+      title: t('invoices.table.period'),
       key: 'period',
       render: (_: unknown, record: Invoice) => {
         if (!record?.period_start || !record?.period_end) return '-';
@@ -252,30 +246,31 @@ export function InvoicesPage() {
       },
     },
     {
-      title: 'Hours',
+      title: t('invoices.table.hours'),
       dataIndex: 'total_hours',
       key: 'hours',
       render: (hours: number | null | undefined) => <Text>{hours ? formatDuration(hours * 60) : '-'}</Text>,
     },
     {
-      title: 'Amount',
+      title: t('invoices.table.amount'),
       dataIndex: 'total_amount',
       key: 'amount',
       render: (amount: number | null | undefined) => (
-        <Text strong style={{ color: BRAND.teal }}>${(Number(amount) || 0).toFixed(2)}</Text>
+        <Text strong style={{ color: '#6366f1' }}>${(Number(amount) || 0).toFixed(2)}</Text>
       ),
     },
     {
-      title: 'Status',
+      title: t('invoices.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string | null | undefined) => {
         if (!status || typeof status !== 'string') return <Tag>-</Tag>;
-        return <Tag color={statusColors[status] || 'default'}>{status.toUpperCase()}</Tag>;
+        const translatedStatus = t(`invoices.status.${status}`, status);
+        return <Tag color={statusColors[status] || 'default'}>{translatedStatus.toUpperCase()}</Tag>;
       },
     },
     {
-      title: 'Actions',
+      title: t('invoices.table.actions'),
       key: 'actions',
       width: 200,
       render: (_: unknown, record: Invoice) => (
@@ -289,7 +284,7 @@ export function InvoicesPage() {
               setDetailsOpen(true);
             }}
           >
-            View
+            {t('invoices.table.view')}
           </Button>
           {record?.status === 'approved' && (
             <Button
@@ -298,9 +293,8 @@ export function InvoicesPage() {
               icon={<DollarOutlined />}
               onClick={() => markPaidMutation.mutate(record.id)}
               loading={markPaidMutation.isPending}
-              style={{ background: BRAND.teal }}
             >
-              Pay
+              {t('invoices.table.pay')}
             </Button>
           )}
         </Space>
@@ -311,12 +305,12 @@ export function InvoicesPage() {
   // Show error if API unavailable
   if (!apiAvailable) {
     return (
-      <div>
-        <Title level={2}>Invoices</Title>
+      <div className="page-container">
+        <Title level={2}>{t('invoices.title')}</Title>
         <Alert
           type="error"
-          message="Invoice API Not Available"
-          description="The invoice API module could not be loaded. Please restart the development server: stop the current process and run 'cd apps/web && npm run dev'."
+          message={t('invoices.apiError')}
+          description={t('invoices.apiErrorDesc')}
           showIcon
         />
       </div>
@@ -324,7 +318,7 @@ export function InvoicesPage() {
   }
 
   return (
-    <div>
+    <div className="page-container">
       {/* Error display */}
       {error && (
         <Card style={{ marginBottom: 24, background: '#fff2f0', border: '1px solid #ffccc7' }}>
@@ -336,24 +330,27 @@ export function InvoicesPage() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>{t('invoices.title')}</Title>
-          <Text type="secondary">{t('invoices.subtitle')}</Text>
-        </div>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <Space>
+          <DollarOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>{t('invoices.title')}</Title>
+            <Text type="secondary">{t('invoices.subtitle')}</Text>
+          </div>
+        </Space>
         <Space wrap>
           <RangePicker
             value={dateRange}
             onChange={(dates) => setDateRange(dates as [Dayjs, Dayjs] | null)}
-            placeholder={['From', 'To']}
+            placeholder={[t('invoices.filters.from'), t('invoices.filters.to')]}
             presets={[
-              { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
-              { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
-              { label: 'This Year', value: [dayjs().startOf('year'), dayjs().endOf('year')] },
+              { label: t('invoices.filters.thisMonth'), value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+              { label: t('invoices.filters.lastMonth'), value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+              { label: t('invoices.filters.thisYear'), value: [dayjs().startOf('year'), dayjs().endOf('year')] },
             ]}
           />
           <Select
-            placeholder="All Developers"
+            placeholder={t('invoices.filters.allDevelopers')}
             allowClear
             style={{ width: 160 }}
             value={developerFilter}
@@ -361,16 +358,16 @@ export function InvoicesPage() {
             options={developers.map((dev: { id: number; name: string }) => ({ label: dev.name, value: dev.id }))}
           />
           <Select
-            placeholder="All Status"
+            placeholder={t('invoices.filters.allStatus')}
             allowClear
             style={{ width: 130 }}
             value={statusFilter}
             onChange={setStatusFilter}
             options={[
-              { label: 'Pending', value: 'pending' },
-              { label: 'Approved', value: 'approved' },
-              { label: 'Paid', value: 'paid' },
-              { label: 'Declined', value: 'declined' },
+              { label: t('invoices.status.pending'), value: 'pending' },
+              { label: t('invoices.status.approved'), value: 'approved' },
+              { label: t('invoices.status.paid'), value: 'paid' },
+              { label: t('invoices.status.declined'), value: 'declined' },
             ]}
           />
           <Button
@@ -378,28 +375,28 @@ export function InvoicesPage() {
             onClick={handleExportCSV}
             disabled={!invoices.length}
           >
-            Export CSV
+            {t('invoices.actions.exportCsv')}
           </Button>
         </Space>
       </div>
 
       {/* Summary Stats */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Total Invoiced"
+              title={t('invoices.stats.totalInvoiced')}
               value={summary.total}
               prefix="$"
               precision={2}
-              valueStyle={{ color: BRAND.deepPurple }}
+              valueStyle={{ color: '#6366f1' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Pending Payment"
+              title={t('invoices.stats.pendingPayment')}
               value={summary.pending}
               prefix="$"
               precision={2}
@@ -410,11 +407,11 @@ export function InvoicesPage() {
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Paid"
+              title={t('invoices.stats.paid')}
               value={summary.paid}
               prefix="$"
               precision={2}
-              valueStyle={{ color: BRAND.teal }}
+              valueStyle={{ color: '#22c55e' }}
             />
           </Card>
         </Col>
@@ -424,6 +421,7 @@ export function InvoicesPage() {
       <Card>
         <Spin spinning={isLoading}>
           <Table
+            scroll={{ x: 900 }}
             columns={columns}
             dataSource={invoices}
             rowKey="id"
@@ -433,7 +431,7 @@ export function InvoicesPage() {
               emptyText: (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="No invoices found"
+                  description={t('invoices.noInvoices')}
                 />
               ),
             }}
@@ -445,10 +443,10 @@ export function InvoicesPage() {
       <Modal
         title={
           <Space>
-            <FileTextOutlined style={{ color: BRAND.vibrantPurple }} />
-            <span>{invoiceDetails?.invoice_number || 'Invoice Details'}</span>
+            <FileTextOutlined style={{ color: '#6366f1' }} />
+            <span>{invoiceDetails?.invoice_number || t('invoices.details.title')}</span>
             {invoiceDetails?.status && typeof invoiceDetails.status === 'string' && (
-              <Tag color={statusColors[invoiceDetails.status]}>{invoiceDetails.status.toUpperCase()}</Tag>
+              <Tag color={statusColors[invoiceDetails.status]}>{t(`invoices.status.${invoiceDetails.status}`, invoiceDetails.status).toUpperCase()}</Tag>
             )}
           </Space>
         }
@@ -462,10 +460,10 @@ export function InvoicesPage() {
           invoiceDetails && (
             <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
               <Text type="secondary">
-                Total: <Text strong style={{ color: BRAND.teal, fontSize: 18 }}>${(Number(invoiceDetails.total_amount) || 0).toFixed(2)}</Text>
+                {t('invoices.details.total')}: <Text strong style={{ color: '#6366f1', fontSize: 18 }}>${(Number(invoiceDetails.total_amount) || 0).toFixed(2)}</Text>
               </Text>
               <Space>
-                <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+                <Button onClick={() => setDetailsOpen(false)}>{t('invoices.details.close')}</Button>
                 {invoiceDetails.status === 'pending' && (
                   <>
                     <Button
@@ -474,16 +472,15 @@ export function InvoicesPage() {
                       onClick={() => declineMutation.mutate(invoiceDetails.id)}
                       loading={declineMutation.isPending}
                     >
-                      Decline
+                      {t('invoices.actions.decline')}
                     </Button>
                     <Button
                       type="primary"
                       icon={<CheckCircleOutlined />}
                       onClick={() => approveMutation.mutate(invoiceDetails.id)}
                       loading={approveMutation.isPending}
-                      style={{ background: BRAND.teal }}
                     >
-                      Approve
+                      {t('invoices.actions.approve')}
                     </Button>
                   </>
                 )}
@@ -493,9 +490,8 @@ export function InvoicesPage() {
                     icon={<DollarOutlined />}
                     onClick={() => markPaidMutation.mutate(invoiceDetails.id)}
                     loading={markPaidMutation.isPending}
-                    style={{ background: BRAND.teal }}
                   >
-                    Mark as Paid
+                    {t('invoices.actions.markPaid')}
                   </Button>
                 )}
               </Space>
@@ -508,53 +504,59 @@ export function InvoicesPage() {
         ) : invoiceDetails ? (
           <>
             {/* Invoice Info */}
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Text type="secondary">Developer</Text>
-                  <div><Text strong>{invoiceDetails.user?.name || 'Unknown'}</Text></div>
-                </Col>
-                <Col span={8}>
-                  <Text type="secondary">Period</Text>
-                  <div>
-                    <Text>
-                      {invoiceDetails.period_start && invoiceDetails.period_end 
-                        ? `${dayjs(invoiceDetails.period_start).format('MMM D')} - ${dayjs(invoiceDetails.period_end).format('MMM D, YYYY')}`
-                        : '-'}
-                    </Text>
-                  </div>
-                </Col>
-                <Col span={8}>
-                  <Text type="secondary">Total Hours</Text>
-                  <div><Text strong>{formatDuration(invoiceDetails.total_hours ? invoiceDetails.total_hours * 60 : null)}</Text></div>
-                </Col>
-              </Row>
-            </Card>
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+              <Col xs={24} sm={8}>
+                <Card size="small">
+                  <Statistic title={t('invoices.details.developer')} value={invoiceDetails.user?.name || 'Unknown'} valueStyle={{ fontSize: 16 }} />
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card size="small">
+                  <Statistic
+                    title={t('invoices.details.period')}
+                    value={invoiceDetails.period_start && invoiceDetails.period_end
+                      ? `${dayjs(invoiceDetails.period_start).format('MMM D')} - ${dayjs(invoiceDetails.period_end).format('MMM D')}`
+                      : '-'}
+                    valueStyle={{ fontSize: 14 }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card size="small">
+                  <Statistic
+                    title={t('invoices.details.totalHours')}
+                    value={formatDuration(invoiceDetails.total_hours ? invoiceDetails.total_hours * 60 : null)}
+                    valueStyle={{ fontSize: 16 }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
             {/* Entries List */}
-            <Card size="small" title="Time Entries">
+            <Card size="small" title={t('invoices.details.timeEntries')}>
               {invoiceDetails.entries?.length ? (
                 <Table
+                  scroll={{ x: 500 }}
                   size="small"
                   dataSource={invoiceDetails.entries}
                   rowKey="id"
                   pagination={false}
                   columns={[
                     {
-                      title: 'Project',
+                      title: t('invoices.details.project'),
                       key: 'project',
                       render: (_: unknown, record: { project?: { name: string } }) => (
-                        <Tag color={BRAND.vibrantPurple}>{record?.project?.name || 'No project'}</Tag>
+                        <Tag color="purple">{record?.project?.name || t('invoices.details.noProject')}</Tag>
                       ),
                     },
                     {
-                      title: 'Description',
+                      title: t('invoices.details.description'),
                       dataIndex: 'description',
                       key: 'description',
                       render: (d: string | null) => d || '-',
                     },
                     {
-                      title: 'Duration',
+                      title: t('invoices.details.duration'),
                       dataIndex: 'duration_minutes',
                       key: 'duration',
                       render: (mins: number | null) => formatDuration(mins),
@@ -562,7 +564,7 @@ export function InvoicesPage() {
                   ]}
                 />
               ) : (
-                <Empty description="No entries" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description={t('invoices.details.noEntries')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
             </Card>
           </>

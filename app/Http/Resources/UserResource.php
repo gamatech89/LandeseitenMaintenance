@@ -29,6 +29,8 @@ class UserResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'tags' => $this->whenLoaded('tags', fn() => TagResource::collection($this->tags)),
+            'managed_projects_count' => $this->when(isset($this->managed_projects_count), $this->managed_projects_count),
+            'assigned_projects_count' => $this->when(isset($this->assigned_projects_count), $this->assigned_projects_count),
         ];
     }
 }

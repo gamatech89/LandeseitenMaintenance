@@ -42,6 +42,8 @@ interface Project {
     ssl_expires_at: string | null;
     wp_version: string | null;
     php_version: string | null;
+    active_plugins: number | null;
+    active_theme: string | null;
     outdated_plugins_count: number | null;
     last_health_details: Record<string, unknown> | null;
     health_check_secret: string | null;

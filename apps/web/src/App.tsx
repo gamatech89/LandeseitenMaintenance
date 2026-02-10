@@ -25,7 +25,7 @@ import { ApprovalsPage } from './features/time/pages/ApprovalsPage';
 import { FinancialReportsPage } from './features/time/pages/FinancialReportsPage';
 import { AnalyticsPage } from './features/time/pages/AnalyticsPage';
 import { InvoicesPage } from './features/time/pages/InvoicesPage';
-import { SupportPage } from './features/support/pages/SupportPage';
+import SupportPage from './features/support/pages/SupportPage';
 import LibraryResourcesPage from './features/library/LibraryResourcesPage';
 
 /**

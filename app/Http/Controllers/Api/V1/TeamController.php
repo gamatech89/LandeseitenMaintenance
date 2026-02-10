@@ -25,7 +25,8 @@ class TeamController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::query()->with('tags');
+        $query = User::query()->with('tags')
+            ->withCount(['managedProjects', 'assignedProjects']);
 
         // Filter by role
         if ($request->filled('role')) {

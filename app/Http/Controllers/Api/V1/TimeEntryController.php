@@ -96,11 +96,8 @@ class TimeEntryController extends Controller
         $timesheet = Timesheet::getOrCreateForWeek(Auth::id(), $startedAt);
 
         // Check if timesheet is still editable
-        // Relaxed restriction: Allow adding entries even if submitted/approved, to support multiple invoices/submissions per week.
-        // Only block if the entire timesheet is paid/locked permanently (optional, but requested workflow implies flexibility).
-        // if (!in_array($timesheet->status, [Timesheet::STATUS_OPEN, Timesheet::STATUS_REJECTED])) {
-        //    return $this->error('Cannot add entry - this week\'s timesheet has already been submitted.', 400);
-        // }
+        // Note: Timesheet status check intentionally relaxed to support flexible invoicing.
+        // Entries can be added regardless of timesheet status (open/submitted/approved).
 
         $entry = TimeEntry::create([
             'user_id' => Auth::id(),

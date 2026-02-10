@@ -8,7 +8,7 @@
  * - PM vs Developer color distinction
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -33,13 +33,17 @@ import {
   FolderOutlined,
   WarningOutlined,
   ExclamationCircleOutlined,
-  EyeOutlined,
   LockOutlined,
   CloseCircleOutlined,
   ApiOutlined,
+  HeartOutlined,
+  SafetyOutlined,
+  RightOutlined,
+  MenuOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
   extractDomain,
@@ -53,6 +57,7 @@ const { Title, Text } = Typography;
 
 export function ProjectsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { resolvedTheme } = useThemeStore();
@@ -91,6 +96,31 @@ export function ProjectsPage() {
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
+  // Capture user_id from URL on first render (before searchParams changes)
+  const initialUserIdRef = useRef(searchParams.get('user_id'));
+
+  // Resolve user_id URL param → apply the correct manager/developer filter
+  useEffect(() => {
+    const userId = initialUserIdRef.current;
+    if (!userId || !filterOptions) return;
+
+    const uid = Number(userId);
+    const isManager = filterOptions.managers?.some((m: any) => m.id === uid);
+    const isDeveloper = filterOptions.developers?.some((d: any) => d.id === uid);
+
+    if (isManager) {
+      setFilters(f => ({ ...f, manager_id: uid, page: 1 }));
+    } else if (isDeveloper) {
+      setFilters(f => ({ ...f, developer_id: uid, page: 1 }));
+    }
+
+    // Mark as processed and clean up URL
+    initialUserIdRef.current = null;
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('user_id');
+    setSearchParams(newParams, { replace: true });
+  }, [filterOptions]);
+
   // Update project mutation (for inline status changes)
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.projects.update(id, data),
@@ -105,191 +135,188 @@ export function ProjectsPage() {
 
   // Health/Security options for inline editing
   const healthOptions = [
-    { label: '● Online', value: 'online', color: '#10b981' },
-    { label: '● Down', value: 'down_error', color: '#ef4444' },
-    { label: '● Updating', value: 'updating', color: '#f59e0b' },
+    { label: `● ${t('projects.health.online')}`, value: 'online', color: '#10b981' },
+    { label: `● ${t('projects.health.down_error')}`, value: 'down_error', color: '#ef4444' },
+    { label: `● ${t('projects.health.maintenance')}`, value: 'updating', color: '#f59e0b' },
   ];
 
   const securityOptions = [
-    { label: '🔒 Secure', value: 'secure', color: '#10b981' },
-    { label: '👁 Monitoring', value: 'monitoring', color: '#f59e0b' },
-    { label: '⚠ At Risk', value: 'compromised', color: '#f97316' },
-    { label: '🚨 Hacked', value: 'hacked', color: '#ef4444' },
+    { label: `● ${t('projects.security.secure')}`, value: 'secure', color: '#10b981' },
+    { label: `● ${t('projects.security.monitoring')}`, value: 'monitoring', color: '#f59e0b' },
+    { label: `● ${t('projects.security.compromised')}`, value: 'compromised', color: '#f97316' },
+    { label: `● ${t('projects.security.hacked')}`, value: 'hacked', color: '#ef4444' },
   ];
 
-  // Table columns - Improved spacing
+  // Table columns - Professional layout
   const columns: ColumnsType<Project> = [
     {
-      title: 'External ID',
-      dataIndex: 'project_external_id',
-      key: 'external_id',
-      width: 110,
-      render: (id: string) => (
-        <Text style={{ color: '#8b5cf6', fontWeight: 600, fontFamily: 'monospace', fontSize: 13 }}>
-          {id || '-'}
-        </Text>
-      ),
-    },
-    {
-      title: 'Maint. ID',
-      dataIndex: 'maintenance_id',
-      key: 'maint_id',
-      width: 110,
-      render: (id: string) => (
-        <Text style={{ color: '#ec4899', fontWeight: 600, fontFamily: 'monospace', fontSize: 13 }}>
-          {id || '-'}
-        </Text>
-      ),
-    },
-    {
-      title: 'Project',
+      title: t('projects.table.project'),
       key: 'name',
-      width: 220,
-      render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar 
-            style={{ 
-              background: `linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)`,
+      width: 260,
+      render: (_, record) => {
+        const isConnected = !!(record as any).health_check_secret;
+        return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Tooltip title={isConnected ? 'Plugin connected' : 'No plugin'}>
+            <div style={{ 
+              position: 'relative',
               flexShrink: 0,
-              fontSize: 14,
-            }}
-            size={32}
-          >
-            {record.name.charAt(0).toUpperCase()}
-          </Avatar>
-          <div style={{ minWidth: 0 }}>
-            <Text strong style={{ display: 'block', color: isDark ? '#f8fafc' : '#1e293b', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              borderRadius: '50%',
+              padding: isConnected ? 2 : 0,
+              background: isConnected ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)' : 'transparent',
+              boxShadow: isConnected ? '0 0 10px rgba(139, 92, 246, 0.35)' : 'none',
+            }}>
+              <Avatar 
+                style={{ 
+                  background: isConnected ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : (isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)'),
+                  color: isConnected ? '#fff' : '#8b5cf6',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: isConnected ? `2px solid ${isDark ? '#1e293b' : '#fff'}` : 'none',
+                }}
+                size={isConnected ? 32 : 36}
+              >
+                {record.name.charAt(0).toUpperCase()}
+              </Avatar>
+            </div>
+          </Tooltip>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <Text strong style={{ display: 'block', color: isDark ? '#f1f5f9' : '#1e293b', fontSize: 13.5, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {record.name}
             </Text>
-            {record.url && (
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                {extractDomain(record.url)}
-              </Text>
-            )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+              {record.url && (
+                <Text type="secondary" style={{ fontSize: 11.5 }}>
+                  {extractDomain(record.url)}
+                </Text>
+              )}
+              {(record.project_external_id || (record as any).maintenance_id) && (
+                <Text type="secondary" style={{ fontSize: 10.5, opacity: 0.6 }}>
+                  {[record.project_external_id, (record as any).maintenance_id].filter(Boolean).join(' · ')}
+                </Text>
+              )}
+            </div>
           </div>
         </div>
-      ),
+        );
+      },
     },
     {
-      title: 'Team',
+      title: t('projects.table.team'),
       key: 'team',
-      width: 140,
+      width: 160,
       render: (_, record) => {
         const pm = record.manager;
         const devs = record.developers || [];
         
         if (!pm && devs.length === 0) {
-          return <Text type="secondary" style={{ fontSize: 12 }}>Unassigned</Text>;
+          return <Text type="secondary" style={{ fontSize: 12, opacity: 0.5 }}>—</Text>;
         }
 
         return (
-          <Space size={4} wrap>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {pm && (
               <Tooltip title={`${pm.name} (PM)`}>
-                <Tag 
-                  style={{ 
-                    background: '#8b5cf6',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 11,
-                    padding: '0 8px',
-                    margin: 0,
-                  }}
-                >
-                  {pm.name.split(' ')[0][0]}{pm.name.split(' ')[1]?.[0] || ''}
-                </Tag>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Avatar
+                    size={24}
+                    style={{
+                      background: 'rgba(139, 92, 246, 0.15)',
+                      color: '#8b5cf6',
+                      fontSize: 10,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {pm.name.split(' ')[0][0]}{pm.name.split(' ')[1]?.[0] || ''}
+                  </Avatar>
+                  <Text style={{ fontSize: 12, fontWeight: 500, color: isDark ? '#c4b5fd' : '#7c3aed' }}>
+                    {pm.name.split(' ')[0]}
+                  </Text>
+                </div>
               </Tooltip>
             )}
-            {devs.map((dev: any, idx: number) => (
-              <Tooltip key={idx} title={`${dev.name} (Dev)`}>
-                <Tag 
-                  style={{ 
-                    background: '#06b6d4',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 11,
-                    padding: '0 8px',
-                    margin: 0,
-                  }}
-                >
-                  {dev.name.split(' ')[0][0]}{dev.name.split(' ')[1]?.[0] || ''}
-                </Tag>
-              </Tooltip>
-            ))}
-          </Space>
+            {devs.length > 0 && (
+              <Avatar.Group
+                max={{ count: 2, style: { backgroundColor: '#06b6d4', fontSize: 10, width: 24, height: 24 } }}
+                size={24}
+              >
+                {devs.map((dev: any, idx: number) => (
+                  <Tooltip key={idx} title={`${dev.name} (Dev)`}>
+                    <Avatar
+                      size={24}
+                      style={{
+                        background: 'rgba(6, 182, 212, 0.15)',
+                        color: '#06b6d4',
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {dev.name.split(' ')[0][0]}{dev.name.split(' ')[1]?.[0] || ''}
+                    </Avatar>
+                  </Tooltip>
+                ))}
+              </Avatar.Group>
+            )}
+          </div>
         );
       },
     },
     {
-      title: 'TODOs',
+      title: t('projects.table.todos'),
       key: 'todos',
       width: 70,
       align: 'center',
       render: (_, record) => {
         const count = record.pending_todos_count || 0;
+        const bg = count === 0 
+          ? (isDark ? 'rgba(71, 85, 105, 0.2)' : 'rgba(203, 213, 225, 0.3)')
+          : count < 5 
+            ? 'rgba(245, 158, 11, 0.12)'
+            : 'rgba(239, 68, 68, 0.12)';
+        const color = count === 0 ? (isDark ? '#64748b' : '#94a3b8') : count < 5 ? '#d97706' : '#dc2626';
         return (
-          <Badge 
-            count={count} 
-            style={{ 
-              backgroundColor: count === 0 ? '#10b981' : count < 5 ? '#f59e0b' : '#ef4444',
-              fontSize: 11,
-            }}
-            showZero
-          />
+          <span style={{ 
+            display: 'inline-block',
+            minWidth: 28,
+            padding: '2px 8px',
+            borderRadius: 10,
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+            background: bg,
+            color,
+          }}>
+            {count}
+          </span>
         );
       },
     },
     {
-      title: 'Tags',
+      title: t('projects.table.tags'),
       key: 'tags',
-      width: 120,
+      width: 130,
       render: (_: unknown, record: Project) => {
         const projectTags = (record as any).tags || [];
-        if (projectTags.length === 0) return <Text type="secondary" style={{ fontSize: 11 }}>—</Text>;
+        if (projectTags.length === 0) return <Text type="secondary" style={{ fontSize: 11, opacity: 0.4 }}>—</Text>;
         return (
           <Space size={4} wrap>
             {projectTags.slice(0, 2).map((tag: any) => (
-              <Tag key={tag.id} color={tag.color || 'default'} style={{ margin: 0, fontSize: 10 }}>
+              <Tag key={tag.id} color={tag.color || 'default'} style={{ margin: 0, fontSize: 11, borderRadius: 6 }}>
                 {tag.name}
               </Tag>
             ))}
             {projectTags.length > 2 && (
               <Tooltip title={projectTags.slice(2).map((t: any) => t.name).join(', ')}>
-                <Tag style={{ margin: 0, fontSize: 10 }}>+{projectTags.length - 2}</Tag>
+                <Tag style={{ margin: 0, fontSize: 11, borderRadius: 6 }}>+{projectTags.length - 2}</Tag>
               </Tooltip>
             )}
           </Space>
         );
       },
     },
+
     {
-      title: (
-        <Tooltip title="WordPress Plugin Connection">
-          <ApiOutlined style={{ color: '#667eea' }} />
-        </Tooltip>
-      ),
-      key: 'plugin',
-      width: 50,
-      align: 'center',
-      render: (_: unknown, record: Project) => {
-        const isConnected = !!(record as any).health_check_secret;
-        return (
-          <Tooltip title={isConnected ? 'Plugin connected' : 'Not connected - click to connect'}>
-            <ApiOutlined 
-              style={{ 
-                fontSize: 16,
-                color: isConnected ? '#22c55e' : '#94a3b8',
-                cursor: 'pointer',
-              }} 
-            />
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: <span style={{ color: '#10b981' }}>⚡ Health</span>,
+      title: <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><HeartOutlined style={{ fontSize: 12 }} /> {t('projects.table.health')}</span>,
       key: 'health',
       width: 130,
       render: (_, record) => (
@@ -303,7 +330,7 @@ export function ProjectsPage() {
             }}
             onClick={(e) => e.stopPropagation()}
             options={healthOptions.map(o => ({
-              label: <span style={{ color: o.color }}>{o.label}</span>,
+              label: <span style={{ color: o.color, fontSize: 12.5 }}>{o.label}</span>,
               value: o.value,
             }))}
             dropdownStyle={{ minWidth: 120 }}
@@ -311,10 +338,19 @@ export function ProjectsPage() {
         ),
     },
     {
-      title: <span style={{ color: '#f59e0b' }}>🔐 Security</span>,
+      title: <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><SafetyOutlined style={{ fontSize: 12 }} /> {t('projects.table.security')}</span>,
       key: 'security',
-      width: 140,
-      render: (_, record) => (
+      width: 150,
+      render: (_, record) => {
+        const secStyles: Record<string, { bg: string; color: string; border: string }> = {
+          secure: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'rgba(16, 185, 129, 0.25)' },
+          monitoring: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: 'rgba(245, 158, 11, 0.25)' },
+          compromised: { bg: 'rgba(249, 115, 22, 0.1)', color: '#ea580c', border: 'rgba(249, 115, 22, 0.25)' },
+          hacked: { bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: 'rgba(239, 68, 68, 0.3)' },
+        };
+        const s = secStyles[record.security_status] || secStyles.secure;
+        const secLabel = securityOptions.find(o => o.value === record.security_status)?.label || record.security_status;
+        return (
           <Select
             size="small"
             value={record.security_status}
@@ -324,32 +360,36 @@ export function ProjectsPage() {
               updateMutation.mutate({ id: record.id, data: { security_status: value } });
             }}
             onClick={(e) => e.stopPropagation()}
+            labelRender={() => (
+              <span style={{
+                display: 'inline-block',
+                padding: '1px 10px',
+                borderRadius: 10,
+                fontSize: 11.5,
+                fontWeight: 600,
+                background: s.bg,
+                color: s.color,
+                border: `1px solid ${s.border}`,
+              }}>
+                {secLabel.replace('● ', '')}
+              </span>
+            )}
             options={securityOptions.map(o => ({
-              label: <span style={{ color: o.color }}>{o.label}</span>,
+              label: <span style={{ color: o.color, fontSize: 12.5 }}>{o.label}</span>,
               value: o.value,
             }))}
             dropdownStyle={{ minWidth: 140 }}
           />
-        ),
+        );
+      },
     },
     {
       title: '',
-      key: 'actions',
-      width: 80,
+      key: 'arrow',
+      width: 36,
       fixed: 'right',
-      render: (_, record) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/projects/${record.id}`);
-          }}
-          style={{ borderRadius: 8 }}
-        >
-          View
-        </Button>
+      render: () => (
+        <RightOutlined className="row-arrow" style={{ fontSize: 11, color: isDark ? '#475569' : '#cbd5e1', transition: 'all 0.2s' }} />
       ),
     },
   ];
@@ -360,21 +400,48 @@ export function ProjectsPage() {
   const compromisedCount = data?.data?.filter((p: Project) => p.security_status === 'compromised').length || 0;
   const monitoringCount = data?.data?.filter((p: Project) => p.security_status === 'monitoring').length || 0;
 
+  // Responsive - simple matchMedia hook
+  const useMediaQuery = (query: string) => {
+    const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+    useEffect(() => {
+      const mql = window.matchMedia(query);
+      const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+      mql.addEventListener('change', handler);
+      return () => mql.removeEventListener('change', handler);
+    }, [query]);
+    return matches;
+  };
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
+
   return (
     <div className="page-container">
       {/* Header Row with Title + Stats + Button */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
-        <Col>
-          <Space size={32} align="center">
-            <Title level={4} style={{ margin: 0 }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'stretch' : 'center',
+        gap: isMobile ? 12 : 16,
+        marginBottom: 20,
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center', 
+            gap: isMobile ? 10 : 24,
+          }}>
+            <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap', fontSize: isMobile ? 18 : undefined }}>
               <FolderOutlined style={{ marginRight: 8 }} />
               {t('projects.title')}
-              <Text type="secondary" style={{ marginLeft: 12, fontSize: 14, fontWeight: 400 }}>
+              <Text type="secondary" style={{ marginLeft: 12, fontSize: isMobile ? 12 : 14, fontWeight: 400 }}>
                 {stats?.total || 0} {t('common.total')}
               </Text>
             </Title>
-            {/* Inline Stats - Premium styled pills */}
-            <Space size={8}>
+            {/* Stats pills - hide on mobile, wrap on tablet */}
+            {!isMobile && (
+              <Space size={8} wrap>
               <Tooltip title={t('projects.stats.downTooltip')}>
                 <div style={{
                   display: 'inline-flex',
@@ -456,19 +523,19 @@ export function ProjectsPage() {
                   <span style={{ opacity: 0.8 }}>{t('projects.stats.monitoring')}</span>
                 </div>
               </Tooltip>
-            </Space>
-          </Space>
-        </Col>
-        <Col>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setShowCreateModal(true)}
-          >
-            {t('projects.newProject')}
-          </Button>
-        </Col>
-      </Row>
+              </Space>
+            )}
+          </div>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setShowCreateModal(true)}
+          style={isMobile ? { width: '100%' } : undefined}
+        >
+          {t('projects.newProject')}
+        </Button>
+      </div>
 
       {/* Create Modal */}
       <ProjectFormModal
@@ -476,103 +543,181 @@ export function ProjectsPage() {
         onClose={() => setShowCreateModal(false)}
       />
 
-      {/* Filters - All in one row */}
+      {/* Table with integrated filters */}
       <Card 
-        style={{ marginBottom: 16, borderRadius: 12, background: isDark ? '#1e293b' : '#fff' }} 
-        bodyStyle={{ padding: 12 }}
+        className="projects-table-card"
+        style={{ borderRadius: 16, background: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none' }} 
+        styles={{ body: { padding: 0 } }}
       >
-        <Space wrap style={{ width: '100%' }}>
-          <Input
-            placeholder="Search projects..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            value={filters.search}
-            onChange={(e) => setFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
-            allowClear
-            style={{ width: 200 }}
-          />
-          <Select
-            style={{ width: 120 }}
-            value={filters.health}
-            onChange={(value) => setFilters(f => ({ ...f, health: value, page: 1 }))}
-            options={[
-              { label: t('projects.filters.allHealth'), value: 'all' },
-              { label: t('projects.health.online'), value: 'online' },
-              { label: t('projects.health.down_error'), value: 'down_error' },
-              { label: t('projects.health.maintenance'), value: 'updating' },
-            ]}
-          />
-          <Select
-            style={{ width: 130 }}
-            value={filters.security}
-            onChange={(value) => setFilters(f => ({ ...f, security: value, page: 1 }))}
-            options={[
-              { label: t('projects.filters.allSecurity'), value: 'all' },
-              { label: t('projects.security.secure'), value: 'secure' },
-              { label: t('projects.security.monitoring'), value: 'monitoring' },
-              { label: t('projects.stats.atRisk'), value: 'compromised' },
-              { label: t('projects.stats.hacked'), value: 'hacked' },
-            ]}
-          />
-          {filterOptions?.managers && (
-            <Select
-              style={{ width: 150 }}
-              value={filters.manager_id}
-              onChange={(value) => setFilters(f => ({ ...f, manager_id: value, page: 1 }))}
-              options={[
-                { label: t('projects.filters.allManagers'), value: undefined },
-                ...filterOptions.managers.map((m: any) => ({ label: m.name, value: m.id })),
-              ]}
-              placeholder={t('projects.form.manager')}
-              allowClear
-            />
+        <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'}` }}>
+          {isMobile ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Input
+                placeholder={t('common.search')}
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                value={filters.search}
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
+                allowClear
+                style={{ width: '100%', borderRadius: 8 }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <Select
+                  value={filters.health}
+                  onChange={(value) => setFilters(f => ({ ...f, health: value, page: 1 }))}
+                  options={[
+                    { label: t('projects.filters.allHealth'), value: 'all' },
+                    { label: t('projects.health.online'), value: 'online' },
+                    { label: t('projects.health.down_error'), value: 'down_error' },
+                    { label: t('projects.health.maintenance'), value: 'updating' },
+                  ]}
+                />
+                <Select
+                  value={filters.security}
+                  onChange={(value) => setFilters(f => ({ ...f, security: value, page: 1 }))}
+                  options={[
+                    { label: t('projects.filters.allSecurity'), value: 'all' },
+                    { label: t('projects.security.secure'), value: 'secure' },
+                    { label: t('projects.security.monitoring'), value: 'monitoring' },
+                    { label: t('projects.stats.atRisk'), value: 'compromised' },
+                    { label: t('projects.stats.hacked'), value: 'hacked' },
+                  ]}
+                />
+                {filterOptions?.managers && (
+                  <Select
+                    value={filters.manager_id}
+                    onChange={(value) => setFilters(f => ({ ...f, manager_id: value, page: 1 }))}
+                    options={[
+                      { label: t('projects.filters.allManagers'), value: undefined },
+                      ...filterOptions.managers.map((m: any) => ({ label: m.name, value: m.id })),
+                    ]}
+                    placeholder={t('projects.form.manager')}
+                    allowClear
+                  />
+                )}
+                {filterOptions?.developers && (
+                  <Select
+                    value={filters.developer_id}
+                    onChange={(value) => setFilters(f => ({ ...f, developer_id: value, page: 1 }))}
+                    options={[
+                      { label: t('projects.filters.allDevelopers'), value: undefined },
+                      ...filterOptions.developers.map((d: any) => ({ label: d.name, value: d.id })),
+                    ]}
+                    placeholder={t('projects.form.developer')}
+                    allowClear
+                  />
+                )}
+                {filterOptions?.tags && filterOptions.tags.length > 0 && (
+                  <Select
+                    value={(filters as any).tag || undefined}
+                    onChange={(value) => setFilters(f => ({ ...f, tag: value || undefined, page: 1 }))}
+                    options={[
+                      { label: t('projects.filters.allTags'), value: '' },
+                      ...filterOptions.tags.map((t: any) => ({ 
+                        label: <Tag color={t.color || 'default'}>{t.name}</Tag>, 
+                        value: t.slug 
+                      })),
+                    ]}
+                    placeholder="Tag"
+                    allowClear
+                  />
+                )}
+              </div>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => { refetch(); refetchStats(); }}
+                type="text"
+                block
+                style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+              />
+            </div>
+          ) : (
+            <Space wrap size={8} style={{ width: '100%' }}>
+              <Input
+                placeholder={t('common.search')}
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                value={filters.search}
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
+                allowClear
+                style={{ width: 200, borderRadius: 8 }}
+              />
+              <Select
+                style={{ width: 120 }}
+                value={filters.health}
+                onChange={(value) => setFilters(f => ({ ...f, health: value, page: 1 }))}
+                options={[
+                  { label: t('projects.filters.allHealth'), value: 'all' },
+                  { label: t('projects.health.online'), value: 'online' },
+                  { label: t('projects.health.down_error'), value: 'down_error' },
+                  { label: t('projects.health.maintenance'), value: 'updating' },
+                ]}
+              />
+              <Select
+                style={{ width: 130 }}
+                value={filters.security}
+                onChange={(value) => setFilters(f => ({ ...f, security: value, page: 1 }))}
+                options={[
+                  { label: t('projects.filters.allSecurity'), value: 'all' },
+                  { label: t('projects.security.secure'), value: 'secure' },
+                  { label: t('projects.security.monitoring'), value: 'monitoring' },
+                  { label: t('projects.stats.atRisk'), value: 'compromised' },
+                  { label: t('projects.stats.hacked'), value: 'hacked' },
+                ]}
+              />
+              {filterOptions?.managers && (
+                <Select
+                  style={{ width: 150 }}
+                  value={filters.manager_id}
+                  onChange={(value) => setFilters(f => ({ ...f, manager_id: value, page: 1 }))}
+                  options={[
+                    { label: t('projects.filters.allManagers'), value: undefined },
+                    ...filterOptions.managers.map((m: any) => ({ label: m.name, value: m.id })),
+                  ]}
+                  placeholder={t('projects.form.manager')}
+                  allowClear
+                />
+              )}
+              {filterOptions?.developers && (
+                <Select
+                  style={{ width: 150 }}
+                  value={filters.developer_id}
+                  onChange={(value) => setFilters(f => ({ ...f, developer_id: value, page: 1 }))}
+                  options={[
+                    { label: t('projects.filters.allDevelopers'), value: undefined },
+                    ...filterOptions.developers.map((d: any) => ({ label: d.name, value: d.id })),
+                  ]}
+                  placeholder={t('projects.form.developer')}
+                  allowClear
+                />
+              )}
+              {filterOptions?.tags && filterOptions.tags.length > 0 && (
+                <Select
+                  style={{ width: 140 }}
+                  value={(filters as any).tag || undefined}
+                  onChange={(value) => setFilters(f => ({ ...f, tag: value || undefined, page: 1 }))}
+                  options={[
+                    { label: t('projects.filters.allTags'), value: '' },
+                    ...filterOptions.tags.map((t: any) => ({ 
+                      label: <Tag color={t.color || 'default'}>{t.name}</Tag>, 
+                      value: t.slug 
+                    })),
+                  ]}
+                  placeholder="Tag"
+                  allowClear
+                />
+              )}
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={() => { refetch(); refetchStats(); }}
+                type="text"
+                style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+              />
+            </Space>
           )}
-          {filterOptions?.developers && (
-            <Select
-              style={{ width: 150 }}
-              value={filters.developer_id}
-              onChange={(value) => setFilters(f => ({ ...f, developer_id: value, page: 1 }))}
-              options={[
-                { label: t('projects.filters.allDevelopers'), value: undefined },
-                ...filterOptions.developers.map((d: any) => ({ label: d.name, value: d.id })),
-              ]}
-              placeholder={t('projects.form.developer')}
-              allowClear
-            />
-          )}
-          {filterOptions?.tags && filterOptions.tags.length > 0 && (
-            <Select
-              style={{ width: 140 }}
-              value={(filters as any).tag || undefined}
-              onChange={(value) => setFilters(f => ({ ...f, tag: value || undefined, page: 1 }))}
-              options={[
-                { label: t('projects.filters.allTags'), value: '' },
-                ...filterOptions.tags.map((t: any) => ({ 
-                  label: <Tag color={t.color || 'default'}>{t.name}</Tag>, 
-                  value: t.slug 
-                })),
-              ]}
-              placeholder="Tag"
-              allowClear
-            />
-          )}
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={() => {
-              refetch();
-              refetchStats();
-            }}
-          >
-            Refresh
-          </Button>
-        </Space>
-      </Card>
+        </div>
 
-      {/* Table */}
-      <Card 
-        style={{ borderRadius: 12, background: isDark ? '#1e293b' : '#fff' }} 
-        bodyStyle={{ padding: 0 }}
-      >
+        {/* Table */}
         <Table
+          className="projects-pro-table"
           columns={columns}
           dataSource={data?.data || []}
           rowKey="id"
@@ -582,18 +727,52 @@ export function ProjectsPage() {
             total: data?.total || 0,
             pageSize: filters.per_page,
             onChange: (page, pageSize) => setFilters(f => ({ ...f, page, per_page: pageSize })),
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
             pageSizeOptions: ['15', '30', '50', '100'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+            showTotal: isMobile ? undefined : (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total}`,
+            size: isMobile ? 'small' : 'default',
+            style: { padding: '12px 16px', margin: 0 },
           }}
           onRow={(record) => ({
             onClick: () => navigate(`/projects/${record.id}`),
             style: { cursor: 'pointer' },
           })}
-          scroll={{ x: 1100 }}
-          size="middle"
+          scroll={{ x: 950 }}
+          size="small"
         />
       </Card>
+
+      {/* Table hover styles */}
+      <style>{`
+        .projects-pro-table .ant-table-thead > tr > th {
+          background: ${isDark ? 'rgba(255,255,255,0.02)' : '#fafbfc'} !important;
+          font-size: 11.5px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: ${isDark ? '#64748b' : '#94a3b8'} !important;
+          padding: 10px 12px !important;
+          border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'} !important;
+        }
+        .projects-pro-table .ant-table-tbody > tr > td {
+          padding: 10px 12px !important;
+          border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc'} !important;
+          transition: all 0.15s ease;
+        }
+        .projects-pro-table .ant-table-tbody > tr:hover > td {
+          background: ${isDark ? 'rgba(139, 92, 246, 0.06)' : 'rgba(139, 92, 246, 0.03)'} !important;
+        }
+        .projects-pro-table .ant-table-tbody > tr:hover > td:first-child {
+          box-shadow: inset 3px 0 0 #8b5cf6;
+        }
+        .projects-pro-table .ant-table-tbody > tr:hover .row-arrow {
+          color: #8b5cf6 !important;
+          transform: translateX(2px);
+        }
+        .projects-pro-table .ant-table-tbody > tr:last-child > td {
+          border-bottom: none !important;
+        }
+      `}</style>
     </div>
   );
 }

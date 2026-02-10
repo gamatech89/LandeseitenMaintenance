@@ -1,6 +1,7 @@
 import { Card, Typography, Button, Space, Avatar, Tag } from 'antd';
 import { CheckCircleOutlined, UserOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useThemeStore } from '@/stores/theme';
@@ -9,6 +10,7 @@ const { Text } = Typography;
 
 export function ApprovalsWidget() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -24,15 +26,15 @@ export function ApprovalsWidget() {
       title={
         <Space>
           <CheckCircleOutlined style={{ color: '#3b82f6' }} />
-          <span>Pending Approvals</span>
+          <span>{t('dashboard.pendingApprovals')}</span>
           {pendingCount > 0 && (
-             <Tag color="blue" style={{ borderRadius: 10, marginLeft: 8 }}>{pendingCount} New</Tag>
+             <Tag color="blue" style={{ borderRadius: 10, marginLeft: 8 }}>{pendingCount} {t('dashboard.new')}</Tag>
           )}
         </Space>
       }
       extra={
         <Button type="link" onClick={() => navigate('/time/approvals')}>
-          Review All
+          {t('dashboard.reviewAll')}
         </Button>
       }
       style={{ 
@@ -42,7 +44,7 @@ export function ApprovalsWidget() {
         height: '100%',
         borderLeft: pendingCount > 0 ? '4px solid #3b82f6' : 'none',
       }}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
     >
       {(pendingTimesheets || []).slice(0, 5).map((ts, index) => (
          <div 
@@ -70,7 +72,7 @@ export function ApprovalsWidget() {
              <div>
                <Text strong style={{ display: 'block' }}>{ts.user?.name}</Text>
                <Text type="secondary" style={{ fontSize: 12 }}>
-                 Week {ts.week_number} • {ts.formatted_total}
+                  {t('dashboard.week')} {ts.week_number} • {ts.formatted_total}
                </Text>
              </div>
            </div>
@@ -82,7 +84,7 @@ export function ApprovalsWidget() {
         <div style={{ padding: 40, textAlign: 'center' }}>
           <CheckCircleOutlined style={{ fontSize: 32, color: '#22c55e', marginBottom: 12, opacity: 0.5 }} />
           <div>
-            <Text type="secondary">All caught up! No pending approvals.</Text>
+             <Text type="secondary">{t('dashboard.allCaughtUp')}</Text>
           </div>
         </div>
       )}

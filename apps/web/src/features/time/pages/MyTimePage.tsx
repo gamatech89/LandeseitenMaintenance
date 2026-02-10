@@ -54,13 +54,6 @@ dayjs.extend(weekOfYear);
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-// Brand colors
-const BRAND = {
-  deepPurple: '#440C71',
-  vibrantPurple: '#6B21A8',
-  teal: '#3AA68D',
-};
-
 interface TimeEntry {
   id: number;
   project_id: number;
@@ -205,12 +198,12 @@ export function MyTimePage() {
       return apiClient.post('/time-entries/submit', { entry_ids: entryIds }).then((r: { data: { success: boolean; message?: string } }) => r.data);
     },
     onSuccess: (data: { message?: string }) => {
-      message.success(data.message || 'Entries submitted for approval');
+      message.success(data.message || t('time.selection.submitSuccess'));
       setSelectedRowKeys([]);
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to submit entries');
+      message.error(error.response?.data?.message || t('time.selection.submitError'));
     },
   });
 
@@ -256,19 +249,19 @@ export function MyTimePage() {
   // Table columns
   const columns = [
     {
-      title: 'Project',
+      title: t('time.table.project'),
       dataIndex: ['project', 'name'],
       key: 'project',
-      render: (name: string) => <Tag color={BRAND.vibrantPurple}>{name}</Tag>,
+      render: (name: string) => <Tag color="purple">{name}</Tag>,
     },
     {
-      title: 'Description',
+      title: t('time.table.description'),
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <Text type="secondary">No description</Text>,
+      render: (desc: string) => desc || <Text type="secondary">{t('time.table.noDescription')}</Text>,
     },
     {
-      title: 'Time',
+      title: t('time.table.time'),
       key: 'time',
       render: (_: unknown, record: TimeEntry) => (
         <Space direction="vertical" size={0}>
@@ -278,26 +271,26 @@ export function MyTimePage() {
       ),
     },
     {
-      title: 'Duration',
+      title: t('time.table.duration'),
       dataIndex: 'formatted_duration',
       key: 'duration',
       render: (duration: string) => <Text strong>{duration}</Text>,
     },
     {
-      title: 'Status',
+      title: t('time.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => <Tag color={statusColors[status]}>{status}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('time.table.actions'),
       key: 'actions',
       width: 100,
       render: (_: unknown, record: TimeEntry) => (
         record.status === 'draft' && (
           <Space>
             <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-            <Popconfirm title="Delete this entry?" onConfirm={() => deleteMutation.mutate(record.id)}>
+            <Popconfirm title={t('time.deleteConfirm')} onConfirm={() => deleteMutation.mutate(record.id)}>
               <Button type="text" danger icon={<DeleteOutlined />} />
             </Popconfirm>
           </Space>
@@ -325,13 +318,22 @@ export function MyTimePage() {
     .filter((e: TimeEntry) => selectedRowKeys.includes(e.id))
     .reduce((acc: number, e: TimeEntry) => acc + (e.duration_minutes || 0), 0);
 
-  // View title helper
+  // View title helper — translated
   const getViewTitle = () => {
     switch (view) {
-      case 'today': return "Today's Total";
-      case 'week': return `Week ${selectedDate.isoWeek()} Total`;
-      case 'month': return `${selectedDate.format('MMMM YYYY')} Total`;
-      case 'all': return 'All Time Total';
+      case 'today': return t('time.todaysTotal');
+      case 'week': return t('time.weekTotal', { week: selectedDate.isoWeek() });
+      case 'month': return t('time.monthTotal', { month: selectedDate.format('MMMM YYYY') });
+      case 'all': return t('time.allTimeTotal');
+    }
+  };
+
+  // Empty state text
+  const getEmptyText = () => {
+    switch (view) {
+      case 'today': return t('time.empty.today');
+      case 'all': return t('time.empty.all');
+      default: return t('time.empty.period', { period: view });
     }
   };
 
@@ -346,13 +348,16 @@ export function MyTimePage() {
   };
 
   return (
-    <div>
+    <div className="page-container">
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>{t('time.title')}</Title>
-          <Text type="secondary">{t('time.subtitle')}</Text>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+        <Space>
+          <ClockCircleOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>{t('time.title')}</Title>
+            <Text type="secondary">{t('time.subtitle')}</Text>
+          </div>
+        </Space>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -362,28 +367,27 @@ export function MyTimePage() {
             form.setFieldsValue({ date: dayjs(), start_time: dayjs().startOf('hour'), end_time: dayjs() });
             setIsModalOpen(true);
           }}
-          style={{ background: BRAND.teal }}
         >
           {t('time.addEntry')}
         </Button>
       </div>
 
       {/* Stats Row */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
               title={getViewTitle()}
               value={formattedTotal}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: BRAND.deepPurple }}
+              valueStyle={{ color: '#6366f1' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Entries"
+              title={t('time.entries')}
               value={totalEntries}
               prefix={<CalendarOutlined />}
             />
@@ -392,9 +396,9 @@ export function MyTimePage() {
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Draft (Unsubmitted)"
+              title={t('time.draftUnsubmitted')}
               value={formatDuration(draftMinutes)}
-              suffix={<Text type="secondary">({draftEntries.length} entries)</Text>}
+              suffix={<Text type="secondary">{t('time.entriesCount', { count: draftEntries.length })}</Text>}
               prefix={<EditOutlined />}
               valueStyle={{ color: draftEntries.length > 0 ? '#faad14' : '#52c41a' }}
             />
@@ -411,11 +415,14 @@ export function MyTimePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>
                 <CheckCircleOutlined style={{ marginRight: 8 }} />
-                {selectedDraftIds.length} draft {selectedDraftIds.length === 1 ? 'entry' : 'entries'} selected ({formatDuration(selectedMinutes)})
+                {t(selectedDraftIds.length === 1 ? 'time.selection.selected' : 'time.selection.selected_plural', {
+                  count: selectedDraftIds.length,
+                  duration: formatDuration(selectedMinutes),
+                })}
               </span>
               <Space>
                 <Button size="small" onClick={() => setSelectedRowKeys([])}>
-                  Clear Selection
+                  {t('time.selection.clearSelection')}
                 </Button>
                 <Button
                   type="primary"
@@ -424,7 +431,7 @@ export function MyTimePage() {
                   onClick={() => submitEntriesMutation.mutate(selectedDraftIds)}
                   loading={submitEntriesMutation.isPending}
                 >
-                  Submit Selected for Approval
+                  {t('time.selection.submitSelected')}
                 </Button>
               </Space>
             </div>
@@ -438,10 +445,10 @@ export function MyTimePage() {
           <Space wrap>
             <Segmented
               options={[
-                { label: 'Today', value: 'today', icon: <ClockCircleOutlined /> },
-                { label: 'Week', value: 'week', icon: <CalendarOutlined /> },
-                { label: 'Month', value: 'month', icon: <CalendarOutlined /> },
-                { label: 'All', value: 'all', icon: <HistoryOutlined /> },
+                { label: t('time.today'), value: 'today', icon: <ClockCircleOutlined /> },
+                { label: t('time.week'), value: 'week', icon: <CalendarOutlined /> },
+                { label: t('time.month'), value: 'month', icon: <CalendarOutlined /> },
+                { label: t('time.all'), value: 'all', icon: <HistoryOutlined /> },
               ]}
               value={view}
               onChange={(v) => { setView(v as ViewType); setPage(1); setSelectedRowKeys([]); }}
@@ -466,7 +473,7 @@ export function MyTimePage() {
               <RangePicker
                 value={dateRange}
                 onChange={(dates) => setDateRange(dates as [Dayjs, Dayjs] | null)}
-                placeholder={['From', 'To']}
+                placeholder={[t('time.from'), t('time.to')]}
                 allowClear
               />
             )}
@@ -478,12 +485,13 @@ export function MyTimePage() {
               size="small" 
               onClick={() => setSelectedRowKeys(draftEntries.map((e: TimeEntry) => e.id))}
             >
-              Select All Draft
+              {t('time.selection.selectAllDraft')}
             </Button>
           )
         }
       >
         <Table
+          scroll={{ x: 800 }}
           columns={columns}
           dataSource={entries}
           rowKey="id"
@@ -495,19 +503,13 @@ export function MyTimePage() {
             total: totalEntries,
             onChange: (p) => setPage(p),
             showSizeChanger: false,
-            showTotal: (total) => `${total} entries`,
+            showTotal: (total) => t('time.totalEntries', { total }),
           } : false}
           locale={{
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  view === 'today' 
-                    ? "No entries today. Start the timer!" 
-                    : view === 'all' 
-                      ? "No entries found. Use date range to filter." 
-                      : `No entries for this ${view}.`
-                }
+                description={getEmptyText()}
               />
             ),
           }}
@@ -516,7 +518,7 @@ export function MyTimePage() {
 
       {/* Add/Edit Entry Modal */}
       <Modal
-        title={editingEntry ? 'Edit Time Entry' : 'Add Time Entry'}
+        title={editingEntry ? t('time.editEntry') : t('time.addTimeEntry')}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -532,24 +534,24 @@ export function MyTimePage() {
         >
           <Form.Item
             name="project_id"
-            label="Project"
-            rules={[{ required: true, message: 'Please select a project' }]}
+            label={t('time.form.project')}
+            rules={[{ required: true, message: t('time.form.projectRequired') }]}
           >
             <Select
-              placeholder="Select project..."
+              placeholder={t('time.form.selectProject')}
               options={projects?.map((p: Project) => ({ label: p.name, value: p.id })) || []}
               showSearch
               optionFilterProp="label"
             />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={2} placeholder="What did you work on?" />
+          <Form.Item name="description" label={t('time.form.description')}>
+            <Input.TextArea rows={2} placeholder={t('time.form.descriptionPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="date"
-            label="Date"
+            label={t('time.form.date')}
             rules={[{ required: true }]}
           >
             <DatePicker style={{ width: '100%' }} />
@@ -559,7 +561,7 @@ export function MyTimePage() {
             <Col span={12}>
               <Form.Item
                 name="start_time"
-                label="Start Time"
+                label={t('time.form.startTime')}
                 rules={[{ required: true }]}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
@@ -568,7 +570,7 @@ export function MyTimePage() {
             <Col span={12}>
               <Form.Item
                 name="end_time"
-                label="End Time"
+                label={t('time.form.endTime')}
                 rules={[{ required: true }]}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
@@ -578,14 +580,13 @@ export function MyTimePage() {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalOpen(false)}>{t('time.cancel')}</Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={createMutation.isPending || updateMutation.isPending}
-                style={{ background: BRAND.teal }}
               >
-                {editingEntry ? 'Update' : 'Add Entry'}
+                {editingEntry ? t('time.update') : t('time.addEntry')}
               </Button>
             </Space>
           </Form.Item>
@@ -594,5 +595,3 @@ export function MyTimePage() {
     </div>
   );
 }
-
-

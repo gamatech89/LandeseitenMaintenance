@@ -127,7 +127,7 @@ export function TeamPage() {
       email: user.email,
       role: user.role,
       hourly_rate: (user as any).hourly_rate ?? 22,
-      tag_ids: (user as any).tags?.map((t: any) => t.id) || [],
+      tag_ids: (user as any).tags?.map((tag: any) => tag.id) || [],
     });
     setShowModal(true);
   };
@@ -144,7 +144,7 @@ export function TeamPage() {
 
   const columns: ColumnsType<User> = [
     {
-      title: 'User',
+      title: t('team.table.user'),
       key: 'user',
       render: (_, record) => (
         <Space>
@@ -163,7 +163,7 @@ export function TeamPage() {
       ),
     },
     {
-      title: 'Role',
+      title: t('team.table.role'),
       key: 'role',
       width: 120,
       render: (_, record) => {
@@ -172,7 +172,7 @@ export function TeamPage() {
       },
     },
     {
-      title: 'Tags',
+      title: t('team.table.tags'),
       key: 'tags',
       width: 150,
       render: (_, record) => {
@@ -189,7 +189,7 @@ export function TeamPage() {
       },
     },
     {
-      title: 'Hourly Rate',
+      title: t('team.table.hourlyRate'),
       key: 'hourly_rate',
       width: 100,
       render: (_, record) => {
@@ -198,7 +198,7 @@ export function TeamPage() {
       },
     },
     {
-      title: 'Actions',
+      title: t('team.table.actions'),
       key: 'actions',
       width: 140,
       render: (_, record) =>
@@ -211,7 +211,7 @@ export function TeamPage() {
               onClick={() => handleEdit(record)}
               style={{ color: '#64748b' }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               type="text"
@@ -220,7 +220,7 @@ export function TeamPage() {
               icon={<DeleteOutlined />}
               onClick={() => handleDelete(record)}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </Space>
         ),
@@ -260,11 +260,11 @@ export function TeamPage() {
       </Row>
 
       {/* Filters */}
-      <Card style={{ marginBottom: 16, borderRadius: 12 }} bodyStyle={{ padding: 16 }}>
+      <Card style={{ marginBottom: 16, borderRadius: 12 }} styles={{ body: { padding: 16 } }}>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={8}>
             <Input
-              placeholder="Search team..."
+              placeholder={t('team.searchPlaceholder')}
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -276,8 +276,11 @@ export function TeamPage() {
               style={{ width: '100%' }}
               value={roleFilter}
               onChange={setRoleFilter}
-              options={[{ label: 'All Roles', value: undefined }, ...roleOptions]}
-              placeholder="Filter by role"
+              options={[
+                { label: t('team.filters.allRoles'), value: undefined },
+                ...roleOptions.map(r => ({ label: t(r.labelKey), value: r.value })),
+              ]}
+              placeholder={t('team.filterByRole')}
               allowClear
             />
           </Col>
@@ -288,10 +291,10 @@ export function TeamPage() {
                 value={tagFilter || undefined}
                 onChange={(value) => setTagFilter(value || undefined)}
                 options={[
-                  { label: 'All Tags', value: '' },
-                  ...tags.map((t: any) => ({ label: t.name, value: t.slug })),
+                  { label: t('team.filters.allTags'), value: '' },
+                  ...tags.map((tag: any) => ({ label: tag.name, value: tag.slug })),
                 ]}
-                placeholder="Filter by tag"
+                placeholder={t('team.filterByTag')}
                 allowClear
               />
             </Col>
@@ -300,7 +303,7 @@ export function TeamPage() {
       </Card>
 
       {/* Table */}
-      <Card style={{ borderRadius: 12 }} bodyStyle={{ padding: 0 }}>
+      <Card style={{ borderRadius: 12 }} styles={{ body: { padding: 0 } }}>
         <Table
           columns={columns}
           dataSource={data || []}
@@ -312,7 +315,7 @@ export function TeamPage() {
 
       {/* Create/Edit Modal */}
       <Modal
-        title={editingUser ? 'Edit Team Member' : 'Add Team Member'}
+        title={editingUser ? t('team.editMember') : t('team.addMember')}
         open={showModal}
         onCancel={() => {
           setShowModal(false);
@@ -329,46 +332,49 @@ export function TeamPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter name' }]}
+            label={t('team.form.name')}
+            rules={[{ required: true, message: t('team.form.namePlaceholder') }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Full name" />
+            <Input prefix={<UserOutlined />} placeholder={t('team.form.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="email"
-            label="Email"
+            label={t('team.form.email')}
             rules={[
-              { required: true, message: 'Please enter email' },
-              { type: 'email', message: 'Please enter a valid email' },
+              { required: true, message: t('team.form.emailPlaceholder') },
+              { type: 'email', message: t('team.form.emailPlaceholder') },
             ]}
           >
-            <Input placeholder="email@example.com" />
+            <Input placeholder={t('team.form.emailPlaceholder')} />
           </Form.Item>
 
           {!editingUser && (
             <Form.Item
               name="password"
-              label="Password"
-              rules={[{ required: true, message: 'Please enter password' }]}
+              label={t('team.form.password')}
+              rules={[{ required: true, message: t('team.form.passwordPlaceholder') }]}
             >
-              <Input.Password placeholder="Password" />
+              <Input.Password placeholder={t('team.form.passwordPlaceholder')} />
             </Form.Item>
           )}
 
           <Form.Item
             name="role"
-            label="Role"
-            rules={[{ required: true, message: 'Please select role' }]}
+            label={t('team.form.role')}
+            rules={[{ required: true, message: t('team.form.selectRole') }]}
           >
-            <Select options={roleOptions} placeholder="Select role" />
+            <Select
+              options={roleOptions.map(r => ({ label: t(r.labelKey), value: r.value }))}
+              placeholder={t('team.form.selectRole')}
+            />
           </Form.Item>
 
           <Form.Item
             name="hourly_rate"
-            label="Hourly Rate ($)"
+            label={t('team.form.hourlyRate')}
             initialValue={22}
-            rules={[{ required: true, message: 'Please enter hourly rate' }]}
+            rules={[{ required: true, message: t('team.form.hourlyRatePlaceholder') }]}
           >
             <InputNumber 
               min={0} 
@@ -381,11 +387,11 @@ export function TeamPage() {
           </Form.Item>
 
           {tags && tags.length > 0 && (
-            <Form.Item name="tag_ids" label="Tags">
+            <Form.Item name="tag_ids" label={t('team.form.tags')}>
               <Select
                 mode="multiple"
-                options={tags.map((t: any) => ({ label: t.name, value: t.id }))}
-                placeholder="Select tags"
+                options={tags.map((tag: any) => ({ label: tag.name, value: tag.id }))}
+                placeholder={t('team.form.selectTags')}
                 allowClear
               />
             </Form.Item>
@@ -393,13 +399,13 @@ export function TeamPage() {
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Space style={{ float: 'right' }}>
-              <Button onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button onClick={() => setShowModal(false)}>{t('common.cancel')}</Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={createMutation.isPending || updateMutation.isPending}
               >
-                {editingUser ? 'Update' : 'Create'}
+                {editingUser ? t('common.update') : t('common.create')}
               </Button>
             </Space>
           </Form.Item>

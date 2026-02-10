@@ -5,7 +5,8 @@
  * Upload, edit, delete library resources and see usage across projects.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -43,11 +44,25 @@ import type { LibraryResource } from '@/lib/library-resources-api';
 
 const { Title, Text } = Typography;
 
+/* ── responsive hook ─────────────────────────────── */
+const useMediaQuery = (query: string) => {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+};
+
 export default function LibraryResourcesPage() {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const queryClient = useQueryClient();
   const { message } = App.useApp();
+  const { t } = useTranslation();
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingResource, setEditingResource] = useState<LibraryResource | null>(null);
@@ -73,14 +88,14 @@ export default function LibraryResourcesPage() {
   const createMutation = useMutation({
     mutationFn: (data: FormData) => api.libraryResources.create(data),
     onSuccess: () => {
-      message.success('Library resource uploaded');
+      message.success(t('library.messages.uploaded'));
       queryClient.invalidateQueries({ queryKey: ['library-resources'] });
       setShowUploadModal(false);
       form.resetFields();
       setFileList([]);
     },
     onError: () => {
-      message.error('Failed to upload resource');
+      message.error(t('library.messages.uploadError'));
     },
   });
 
@@ -89,14 +104,14 @@ export default function LibraryResourcesPage() {
     mutationFn: ({ id, data }: { id: number; data: FormData }) => 
       api.libraryResources.update(id, data),
     onSuccess: () => {
-      message.success('Library resource updated');
+      message.success(t('library.messages.updated'));
       queryClient.invalidateQueries({ queryKey: ['library-resources'] });
       setEditingResource(null);
       form.resetFields();
       setFileList([]);
     },
     onError: () => {
-      message.error('Failed to update resource');
+      message.error(t('library.messages.updateError'));
     },
   });
 
@@ -104,11 +119,11 @@ export default function LibraryResourcesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.libraryResources.delete(id),
     onSuccess: () => {
-      message.success('Library resource deleted');
+      message.success(t('library.messages.deleted'));
       queryClient.invalidateQueries({ queryKey: ['library-resources'] });
     },
     onError: () => {
-      message.error('Failed to delete resource');
+      message.error(t('library.messages.deleteError'));
     },
   });
 
@@ -119,18 +134,16 @@ export default function LibraryResourcesPage() {
     if (values.notes) formData.append('notes', values.notes);
 
     if (editingResource) {
-      // Update - file is optional
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
       }
       updateMutation.mutate({ id: editingResource.id, data: formData });
     } else {
-      // Create - file is required
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
         createMutation.mutate(formData);
       } else {
-        message.error('Please select a file to upload');
+        message.error(t('library.selectFileError'));
       }
     }
   };
@@ -146,7 +159,7 @@ export default function LibraryResourcesPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      message.error('Failed to download file');
+      message.error(t('library.messages.downloadError'));
     }
   };
 
@@ -162,7 +175,7 @@ export default function LibraryResourcesPage() {
 
   const columns: TableProps<LibraryResource>['columns'] = [
     {
-      title: 'Title',
+      title: t('library.table.title'),
       dataIndex: 'title',
       key: 'title',
       render: (title: string) => (
@@ -173,7 +186,7 @@ export default function LibraryResourcesPage() {
       ),
     },
     {
-      title: 'Category',
+      title: t('library.table.category'),
       dataIndex: 'category',
       key: 'category',
       width: 140,
@@ -185,11 +198,11 @@ export default function LibraryResourcesPage() {
       onFilter: (value, record) => record.category === value,
     },
     {
-      title: 'File',
+      title: t('library.table.file'),
       dataIndex: 'file_name',
       key: 'file_name',
       render: (fileName: string, record: LibraryResource) => (
-        <Tooltip title="Click to download">
+        <Tooltip title={t('library.clickToDownload')}>
           <Button 
             type="link" 
             size="small" 
@@ -203,7 +216,7 @@ export default function LibraryResourcesPage() {
       ),
     },
     {
-      title: 'Used In',
+      title: t('library.table.usedIn'),
       dataIndex: 'projects_count',
       key: 'projects_count',
       width: 100,
@@ -226,13 +239,13 @@ export default function LibraryResourcesPage() {
           {
             key: 'download',
             icon: <DownloadOutlined />,
-            label: 'Download',
+            label: t('common.download'),
             onClick: () => handleDownload(record),
           },
           {
             key: 'edit',
             icon: <EditOutlined />,
-            label: 'Edit',
+            label: t('common.edit'),
             onClick: () => openEditModal(record),
           },
           {
@@ -241,15 +254,16 @@ export default function LibraryResourcesPage() {
           {
             key: 'delete',
             icon: <DeleteOutlined />,
-            label: 'Delete',
+            label: t('common.delete'),
             danger: true,
             onClick: () => {
               Modal.confirm({
-                title: 'Delete Library Resource?',
+                title: t('library.deleteConfirm.title'),
                 content: record.projects_count && record.projects_count > 0 
-                  ? `This file is linked to ${record.projects_count} project(s). It will be unlinked from all of them.`
-                  : 'This action cannot be undone.',
-                okText: 'Delete',
+                  ? t('library.deleteConfirm.linkedWarning', { count: record.projects_count })
+                  : t('library.deleteConfirm.noUndo'),
+                okText: t('common.delete'),
+                cancelText: t('common.cancel'),
                 okButtonProps: { danger: true },
                 onOk: () => deleteMutation.mutate(record.id),
               });
@@ -268,16 +282,23 @@ export default function LibraryResourcesPage() {
   const allCategories = [...new Set([...categories, ...suggestedCategories])];
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: 24 }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'stretch' : 'center',
+        gap: isMobile ? 12 : 0,
+        marginBottom: 24,
+      }}>
         <div>
           <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
             <FolderOpenOutlined style={{ color: '#a855f7' }} />
-            Library Resources
+            {t('library.title')}
           </Title>
           <Text type="secondary">
-            Shared files that can be linked to multiple projects
+            {t('library.subtitle')}
           </Text>
         </div>
         <Button 
@@ -289,8 +310,9 @@ export default function LibraryResourcesPage() {
             setFileList([]);
             setShowUploadModal(true);
           }}
+          style={isMobile ? { width: '100%' } : undefined}
         >
-          Upload File
+          {t('library.uploadFile')}
         </Button>
       </div>
 
@@ -299,7 +321,7 @@ export default function LibraryResourcesPage() {
         <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#a855f7' }}>{resources.length}</div>
-            <Text type="secondary">Total Files</Text>
+            <Text type="secondary">{t('library.stats.totalFiles')}</Text>
           </div>
         </Card>
         <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
@@ -307,7 +329,7 @@ export default function LibraryResourcesPage() {
             <div style={{ fontSize: 28, fontWeight: 700, color: '#22c55e' }}>
               {resources.filter((r: LibraryResource) => (r.projects_count || 0) > 0).length}
             </div>
-            <Text type="secondary">In Use</Text>
+            <Text type="secondary">{t('library.stats.inUse')}</Text>
           </div>
         </Card>
         <Card size="small" style={{ flex: 1, background: isDark ? '#1e293b' : '#f8fafc' }}>
@@ -315,7 +337,7 @@ export default function LibraryResourcesPage() {
             <div style={{ fontSize: 28, fontWeight: 700, color: '#3b82f6' }}>
               {[...new Set(resources.map((r: LibraryResource) => r.category).filter(Boolean))].length}
             </div>
-            <Text type="secondary">Categories</Text>
+            <Text type="secondary">{t('library.stats.categories')}</Text>
           </div>
         </Card>
       </div>
@@ -326,7 +348,7 @@ export default function LibraryResourcesPage() {
           borderRadius: 12,
           background: isDark ? '#1e293b' : '#fff',
         }}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         {resources.length > 0 ? (
           <Table
@@ -334,7 +356,12 @@ export default function LibraryResourcesPage() {
             columns={columns}
             rowKey="id"
             loading={isLoading}
-            pagination={resources.length > 10 ? { pageSize: 10 } : false}
+            scroll={{ x: 600 }}
+            pagination={resources.length > 10 ? { 
+              pageSize: 10,
+              showSizeChanger: !isMobile,
+              size: isMobile ? 'small' : 'default',
+            } : false}
             size="middle"
           />
         ) : (
@@ -342,14 +369,14 @@ export default function LibraryResourcesPage() {
             image={<FolderOpenOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}
             description={
               <div style={{ padding: 24 }}>
-                <Text type="secondary">No library resources yet</Text>
+                <Text type="secondary">{t('library.noResources')}</Text>
                 <div style={{ marginTop: 16 }}>
                   <Button 
                     type="primary" 
                     icon={<UploadOutlined />}
                     onClick={() => setShowUploadModal(true)}
                   >
-                    Upload First File
+                    {t('library.uploadFirstFile')}
                   </Button>
                 </div>
               </div>
@@ -364,14 +391,14 @@ export default function LibraryResourcesPage() {
         <Space>
           <LinkOutlined style={{ color: '#3b82f6' }} />
           <Text type="secondary">
-            <strong>Tip:</strong> Go to any project's Resources tab and click "Link from Library" to use these files.
+            <strong>{t('library.tipLabel')}</strong> {t('library.tip')}
           </Text>
         </Space>
       </Card>
 
       {/* Upload/Edit Modal */}
       <Modal
-        title={editingResource ? 'Edit Library Resource' : 'Upload to Library'}
+        title={editingResource ? t('library.editResource') : t('library.uploadToLibrary')}
         open={showUploadModal || !!editingResource}
         onCancel={() => {
           setShowUploadModal(false);
@@ -380,7 +407,8 @@ export default function LibraryResourcesPage() {
           setFileList([]);
         }}
         onOk={() => form.submit()}
-        okText={editingResource ? 'Update' : 'Upload'}
+        okText={editingResource ? t('common.update') : t('common.upload')}
+        cancelText={t('common.cancel')}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         width={500}
       >
@@ -392,18 +420,18 @@ export default function LibraryResourcesPage() {
         >
           <Form.Item
             name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Please enter a title' }]}
+            label={t('library.form.title')}
+            rules={[{ required: true, message: t('library.form.titleRequired') }]}
           >
-            <Input placeholder="e.g. Developer Guide, Security Checklist" />
+            <Input placeholder={t('library.form.titlePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="category"
-            label="Category"
+            label={t('library.form.category')}
           >
             <Select
-              placeholder="Select or type a category"
+              placeholder={t('library.form.categoryPlaceholder')}
               allowClear
               showSearch
               options={allCategories.map(cat => ({ label: cat, value: cat }))}
@@ -411,7 +439,7 @@ export default function LibraryResourcesPage() {
           </Form.Item>
 
           <Form.Item
-            label={editingResource ? "Replace File (optional)" : "File"}
+            label={editingResource ? t('library.replaceFile') : t('library.file')}
             required={!editingResource}
           >
             <Upload
@@ -421,21 +449,21 @@ export default function LibraryResourcesPage() {
               maxCount={1}
             >
               <Button icon={<UploadOutlined />}>
-                {editingResource ? 'Select New File' : 'Select File'}
+                {editingResource ? t('library.selectNewFile') : t('library.selectFile')}
               </Button>
             </Upload>
             {editingResource && (
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                Current: {editingResource.file_name}
+                {t('library.current')}: {editingResource.file_name}
               </Text>
             )}
           </Form.Item>
 
           <Form.Item
             name="notes"
-            label="Notes"
+            label={t('library.form.notes')}
           >
-            <Input.TextArea rows={2} placeholder="Optional notes about this resource..." />
+            <Input.TextArea rows={2} placeholder={t('library.form.notesPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>

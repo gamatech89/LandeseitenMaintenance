@@ -4,7 +4,6 @@ import {
   WarningOutlined,
   ProjectOutlined,
   TeamOutlined,
-  CalendarOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -60,28 +59,27 @@ export function ManagerDashboard() {
 
   // Identify Critical Projects
   const criticalProjects = useMemo(() => {
-     const list = [];
+     const list: { id: string | number; name: string; issue: string; type: string; tag: string }[] = [];
      
      // 1. Hacked / Down Sites
      if ((stats.hacked || 0) + (stats.down || 0) > 0) {
         list.push({
             id: 'security-alert',
-            name: 'Critical Infrastructure',
-            issue: `${(stats.hacked || 0) + (stats.down || 0)} sites are Hacked or Down!`,
+            name: t('dashboard.criticalInfrastructure'),
+            issue: t('dashboard.sitesHackedDown', { count: (stats.hacked || 0) + (stats.down || 0) }),
             type: 'security',
             tag: 'CRITICAL'
         });
      }
 
-     // 2. Overdue Projects (Mock logic if deadline logic isn't perfect in API yet, or use real dates)
-     // Assuming project has deadline string.
+     // 2. Overdue Projects
      if (projects) {
          projects.forEach((p: any) => {
              if (p.deadline && new Date(p.deadline) < new Date() && p.status !== 'completed') {
                  list.push({
                      id: p.id,
                      name: p.name,
-                     issue: `Deadline passed on ${new Date(p.deadline).toLocaleDateString()}`,
+                     issue: t('dashboard.deadlinePassed', { date: new Date(p.deadline).toLocaleDateString() }),
                      type: 'overdue',
                      tag: 'OVERDUE'
                  });
@@ -89,19 +87,8 @@ export function ManagerDashboard() {
          });
      }
      
-     // Fallback Mock if empty so user sees something
-     if (list.length === 0) {
-         list.push({
-             id: 'mock-overdue',
-             name: 'E-Commerce Relaunch',
-             issue: 'Deadline passed explicitly (User Request)',
-             type: 'overdue',
-             tag: 'OVERDUE'
-         });
-     }
-
      return list;
-  }, [stats, projects]);
+  }, [stats, projects, t]);
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -119,7 +106,7 @@ export function ManagerDashboard() {
           {getGreeting()}, {user?.name?.split(' ')[0]}! 🚀
         </Title>
         <Text type="secondary" style={{ fontSize: 15 }}>
-          Your projects are moving forward. Here is the overview.
+          {t('dashboard.managerSubtitle')}
         </Text>
       </div>
 
@@ -127,8 +114,8 @@ export function ManagerDashboard() {
         {/* Top Row: Key Metrics */}
         <Col xs={12} lg={6}>
           <GlassStatCard
-            title="Managed Projects"
-            value={projects?.length || "12"}
+            title={t('dashboard.managedProjects')}
+            value={projects?.length || 0}
             icon={<ProjectOutlined />}
             color="#6366f1"
             trend="neutral"
@@ -136,32 +123,32 @@ export function ManagerDashboard() {
         </Col>
         <Col xs={12} lg={6}>
            <GlassStatCard
-            title="Projects At Risk"
+            title={t('dashboard.projectsAtRisk')}
             value={stats.at_risk}
             icon={<WarningOutlined />}
             color="#f59e0b"
             trend={stats.at_risk > 0 ? 'down' : 'neutral'}
-            trendValue="Needs Attention"
+            trendValue={stats.at_risk > 0 ? t('dashboard.needsAttentionSuffix') : ''}
             onClick={() => navigate('/projects?status=risk')}
           />
         </Col>
          <Col xs={12} lg={6}>
            <GlassStatCard
-            title="Team Availability"
+            title={t('dashboard.teamAvailability')}
             value={`${teamAvailability.filter(m => m.status === 'online').length}/${teamAvailability.length}`}
             icon={<TeamOutlined />}
             color="#22c55e"
-            suffix="Online"
+            suffix={t('dashboard.onlineSuffix')}
           />
         </Col>
          <Col xs={12} lg={6}>
            <GlassStatCard
-            title="Hacked / Down"
+            title={t('dashboard.stats.hackedDown')}
             value={(stats.hacked || 0) + (stats.down || 0)}
             icon={<SafetyOutlined />}
             color="#ef4444"
             trend="down"
-            trendValue="Critical"
+            trendValue={t('dashboard.criticalSuffix')}
           />
         </Col>
 
@@ -173,15 +160,15 @@ export function ManagerDashboard() {
 
              {/* Projects Needing Attention */}
              <Card 
-               title={<Space><WarningOutlined style={{ color: '#ef4444' }} /><span>Projects Needing Attention</span></Space>}
+               title={<Space><WarningOutlined style={{ color: '#ef4444' }} /><span>{t('dashboard.projectsNeedingAttention')}</span></Space>}
                style={{ borderRadius: 16, border: 'none' }}
-               bodyStyle={{ padding: 0 }}
+               styles={{ body: { padding: 0 } }}
              >
                 {criticalProjects.length > 0 ? criticalProjects.map((item, index) => (
                     <div key={index} style={{ padding: '20px 24px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text strong>{item.name}</Text>
-                          <Tag color={item.type === 'security' ? '#ef4444' : '#purple'}>
+                          <Tag color={item.type === 'security' ? '#ef4444' : 'purple'}>
                               {item.tag}
                           </Tag>
                        </div>
@@ -189,7 +176,7 @@ export function ManagerDashboard() {
                     </div>
                 )) : (
                     <div style={{ padding: 24, textAlign: 'center' }}>
-                        <Text type="secondary">All projects are on track! 🎉</Text>
+                        <Text type="secondary">{t('dashboard.allOnTrack')}</Text>
                     </div>
                 )}
              </Card>
@@ -199,9 +186,9 @@ export function ManagerDashboard() {
         {/* Right Column: Team Availability */}
         <Col xs={24} lg={10}>
            <Card
-              title={<Space><TeamOutlined style={{ color: '#ec4899' }} /><span>Team Status</span></Space>}
+              title={<Space><TeamOutlined style={{ color: '#6366f1' }} /><span>{t('dashboard.teamStatus')}</span></Space>}
               style={{ borderRadius: 16, border: 'none', height: '100%' }}
-              bodyStyle={{ padding: 16 }}
+              styles={{ body: { padding: 16 } }}
            >
               {teamAvailability.map(member => (
                   <div key={member.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
@@ -216,10 +203,10 @@ export function ManagerDashboard() {
                      <Text strong>{member.name}</Text>
                      <div style={{ marginLeft: 'auto' }}>
                         {member.status === 'online' ? (
-                            <Tag color="success" style={{ border: 'none', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>Online</Tag>
+                            <Tag color="success" style={{ border: 'none', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>{t('dashboard.online')}</Tag>
                         ) : (
                             <Tag color={member.status === 'sick' ? 'error' : 'warning'}>
-                                {member.status === 'sick' ? 'Sick Leave' : 'Away'}
+                                {member.status === 'sick' ? t('dashboard.sickLeave') : t('dashboard.away')}
                             </Tag>
                         )}
                      </div>

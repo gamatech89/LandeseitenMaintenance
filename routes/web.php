@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\CredentialShareController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Since the frontend is now a standalone React SPA (apps/web/),
-| web routes are minimal. Only public share routes and dev mock endpoints.
+| web routes are minimal. Only health checks and dev mock endpoints.
 |
 */
 
@@ -49,13 +48,8 @@ Route::get('/up', function () {
     return response('OK', 200);
 });
 
-// =====================================================
-// PUBLIC CREDENTIAL SHARE ROUTES (no auth required)
-// =====================================================
-Route::prefix('share')->name('share.')->group(function () {
-    Route::get('/credential/{token}', [CredentialShareController::class, 'show'])->name('show');
-    Route::post('/credential/{token}/verify', [CredentialShareController::class, 'verifyPassword'])->name('verify');
-});
+// Credential sharing is handled by the SPA via API routes
+// See: routes/api.php -> /api/v1/share/*
 
 // =====================================================
 // MOCK WORDPRESS API (DEV ONLY - Remove in production!)
@@ -141,7 +135,3 @@ if (app()->environment('local')) {
         });
     });
 }
-
-// Web auth routes disabled - React SPA uses API routes for authentication
-// See: routes/api.php -> /api/v1/auth/*
-// require __DIR__.'/auth.php';

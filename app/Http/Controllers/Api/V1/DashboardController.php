@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Models\Todo;
+use App\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -100,6 +102,24 @@ class DashboardController extends Controller
                 SUM(CASE WHEN security_status = 'hacked' THEN 1 ELSE 0 END) as hacked
             ")->first();
 
+            // Count open todos
+            $todoQuery = Todo::where('status', '!=', 'completed')->whereNull('deleted_at');
+            if ($user->role === 'developer') {
+                $todoQuery->where('assignee_id', $user->id);
+            } elseif ($user->role === 'manager') {
+                $todoQuery->whereHas('project', fn($q) => $q->where('manager_id', $user->id));
+            }
+            $openTodos = $todoQuery->count();
+
+            // Count open support tickets
+            $ticketQuery = SupportTicket::open();
+            if ($user->role === 'developer') {
+                $ticketQuery->whereHas('project.developers', fn($q) => $q->where('user_id', $user->id));
+            } elseif ($user->role === 'manager') {
+                $ticketQuery->whereHas('project', fn($q) => $q->where('manager_id', $user->id));
+            }
+            $openTickets = $ticketQuery->count();
+
             return [
                 'total' => (int) $result->total,
                 'online' => (int) $result->online,
@@ -109,6 +129,8 @@ class DashboardController extends Controller
                 'monitoring' => (int) $result->monitoring,
                 'at_risk' => (int) $result->at_risk,
                 'hacked' => (int) $result->hacked,
+                'open_todos' => $openTodos,
+                'open_tickets' => $openTickets,
             ];
         });
     }

@@ -22,6 +22,9 @@ import {
   Avatar,
   Badge,
   Checkbox,
+  Row,
+  Col,
+  Statistic,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -30,17 +33,12 @@ import {
   EyeOutlined,
   ClockCircleOutlined,
   DollarOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
 const { Title, Text, Paragraph } = Typography;
-
-const BRAND = {
-  deepPurple: '#440C71',
-  vibrantPurple: '#6B21A8',
-  teal: '#3AA68D',
-};
 
 interface TimeEntry {
   id: number;
@@ -124,7 +122,7 @@ export function ApprovalsPage() {
       return apiClient.post('/time-entries/approve', { entry_ids: entryIds, rate_overrides: rates }).then((r: { data: { success: boolean; message?: string } }) => r.data);
     },
     onSuccess: (data: { message?: string }) => {
-      message.success(data?.message || 'Selected entries approved!');
+      message.success(data?.message || t('approvals.messages.approved'));
       setDetailsOpen(false);
       setSelectedTimesheet(null);
       setSelectedEntryIds(new Set());
@@ -134,7 +132,7 @@ export function ApprovalsPage() {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to approve');
+      message.error(error.response?.data?.message || t('approvals.messages.approveError'));
     },
   });
 
@@ -145,7 +143,7 @@ export function ApprovalsPage() {
       return apiClient.post('/time-entries/reject', { entry_ids: entryIds, reason }).then((r: { data: { success: boolean } }) => r.data);
     },
     onSuccess: () => {
-      message.success('Selected entries rejected');
+      message.success(t('approvals.messages.rejected'));
       setRejectOpen(false);
       setDetailsOpen(false);
       setSelectedTimesheet(null);
@@ -155,7 +153,7 @@ export function ApprovalsPage() {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to reject');
+      message.error(error.response?.data?.message || t('approvals.messages.rejectError'));
     },
   });
 
@@ -202,7 +200,7 @@ export function ApprovalsPage() {
   const handleApproveSelected = () => {
     if (!selectedTimesheet) return;
     if (selectedEntryIds.size === 0) {
-      message.warning('Please select at least one entry to approve');
+      message.warning(t('approvals.selection.selectWarning'));
       return;
     }
     approveMutation.mutate({ 
@@ -216,11 +214,11 @@ export function ApprovalsPage() {
   const handleRejectSelected = () => {
     if (!selectedTimesheet) return;
     if (selectedEntryIds.size === 0) {
-      message.warning('Please select at least one entry to reject');
+      message.warning(t('approvals.selection.selectWarning'));
       return;
     }
     if (!rejectReason.trim()) {
-      message.warning('Please provide a reason for rejection');
+      message.warning(t('approvals.rejectModal.reasonRequired'));
       return;
     }
     rejectMutation.mutate({ 
@@ -238,11 +236,11 @@ export function ApprovalsPage() {
   // Table columns
   const columns = [
     {
-      title: 'Developer',
+      title: t('approvals.table.developer'),
       key: 'user',
       render: (_: unknown, record: Timesheet) => (
         <Space>
-          <Avatar style={{ backgroundColor: BRAND.vibrantPurple }} icon={<UserOutlined />}>
+          <Avatar style={{ backgroundColor: '#6366f1' }} icon={<UserOutlined />}>
             {record.user?.name?.charAt(0)}
           </Avatar>
           <Text strong>{record.user?.name}</Text>
@@ -250,12 +248,12 @@ export function ApprovalsPage() {
       ),
     },
     {
-      title: 'Week',
+      title: t('approvals.table.week'),
       dataIndex: 'week_label',
       key: 'week',
     },
     {
-      title: 'Total Time',
+      title: t('approvals.table.totalTime'),
       key: 'total',
       render: (_: unknown, record: Timesheet) => (
         <Space>
@@ -265,19 +263,19 @@ export function ApprovalsPage() {
       ),
     },
     {
-      title: 'Entries',
+      title: t('approvals.table.entries'),
       dataIndex: 'entries_count',
       key: 'entries',
-      render: (count: number) => <Badge count={count} style={{ backgroundColor: BRAND.teal }} />,
+      render: (count: number) => <Badge count={count} style={{ backgroundColor: '#6366f1' }} />,
     },
     {
-      title: 'Submitted',
+      title: t('approvals.table.submitted'),
       dataIndex: 'submitted_at',
       key: 'submitted',
       render: (date: string) => date ? new Date(date).toLocaleDateString() : '-',
     },
     {
-      title: 'Actions',
+      title: t('approvals.table.actions'),
       key: 'actions',
       width: 120,
       render: (_: unknown, record: Timesheet) => (
@@ -286,7 +284,7 @@ export function ApprovalsPage() {
           icon={<EyeOutlined />}
           onClick={() => handleViewDetails(record)}
         >
-          Review
+          {t('approvals.table.review')}
         </Button>
       ),
     },
@@ -312,33 +310,33 @@ export function ApprovalsPage() {
       ),
     },
     {
-      title: 'Project',
+      title: t('approvals.details.project'),
       key: 'project',
       render: (_: unknown, record: TimeEntry) => (
-        <Tag color={BRAND.vibrantPurple}>{record.project?.name}</Tag>
+        <Tag color="purple">{record.project?.name}</Tag>
       ),
     },
     {
-      title: 'Description',
+      title: t('approvals.details.description'),
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <Text type="secondary">No description</Text>,
+      render: (desc: string) => desc || <Text type="secondary">{t('approvals.details.noDescription')}</Text>,
     },
     {
-      title: 'Date',
+      title: t('approvals.details.date'),
       dataIndex: 'started_at',
       key: 'date',
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
-      title: 'Duration',
+      title: t('approvals.details.duration'),
       key: 'duration',
       render: (_: unknown, record: TimeEntry) => (
         <Text strong>{record.duration_minutes ? formatDuration(record.duration_minutes) : record.formatted_duration}</Text>
       ),
     },
     {
-      title: 'Rate ($/hr)',
+      title: t('approvals.details.ratePerHour'),
       key: 'rate',
       width: 120,
       render: (_: unknown, record: TimeEntry) => (
@@ -375,19 +373,24 @@ export function ApprovalsPage() {
   }, [timesheetDetails?.entries, selectedEntryIds, rateOverrides]);
 
   return (
-    <div>
+    <div className="page-container">
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0 }}>{t('approvals.title')}</Title>
-        <Text type="secondary">{t('approvals.subtitle')}</Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+        <Space>
+          <AuditOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>{t('approvals.title')}</Title>
+            <Text type="secondary">{t('approvals.subtitle')}</Text>
+          </div>
+        </Space>
       </div>
 
       {/* Pending count */}
       {pendingTimesheets && pendingTimesheets.length > 0 && (
-        <Card style={{ marginBottom: 16, background: `${BRAND.vibrantPurple}10`, border: `1px solid ${BRAND.vibrantPurple}30` }}>
+        <Card style={{ marginBottom: 16, background: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
           <Space>
-            <Badge count={pendingTimesheets.length} style={{ backgroundColor: BRAND.vibrantPurple }} />
-            <Text>timesheets awaiting your approval</Text>
+            <Badge count={pendingTimesheets.length} style={{ backgroundColor: '#6366f1' }} />
+            <Text>{t('approvals.awaitingApproval')}</Text>
           </Space>
         </Card>
       )}
@@ -395,6 +398,7 @@ export function ApprovalsPage() {
       {/* Timesheets Table */}
       <Card>
         <Table
+          scroll={{ x: 800 }}
           columns={columns}
           dataSource={pendingTimesheets || []}
           rowKey="id"
@@ -415,10 +419,10 @@ export function ApprovalsPage() {
       <Modal
         title={
           <Space>
-            <Avatar style={{ backgroundColor: BRAND.vibrantPurple }} icon={<UserOutlined />}>
+            <Avatar style={{ backgroundColor: '#6366f1' }} icon={<UserOutlined />}>
               {timesheetDetails?.user?.name?.charAt(0)}
             </Avatar>
-            <span>{timesheetDetails?.user?.name}'s Timesheet</span>
+            <span>{t('approvals.details.timesheetTitle', { name: timesheetDetails?.user?.name })}</span>
             <Tag>{timesheetDetails?.week_label}</Tag>
           </Space>
         }
@@ -433,19 +437,19 @@ export function ApprovalsPage() {
           <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <div>
               <Text type="secondary">
-                Selected: {selectedEntryIds.size} entries • {formatDuration(selectedTotals.minutes)} • 
-                <Text strong style={{ color: BRAND.teal }}> ${selectedTotals.cost.toFixed(2)}</Text>
+                {t('approvals.selection.selected', { count: selectedEntryIds.size })} • {formatDuration(selectedTotals.minutes)} • 
+                <Text strong style={{ color: '#6366f1' }}> ${selectedTotals.cost.toFixed(2)}</Text>
               </Text>
             </div>
             <Space>
-              <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+              <Button onClick={() => setDetailsOpen(false)}>{t('approvals.details.close')}</Button>
               <Button
                 danger
                 icon={<CloseCircleOutlined />}
                 onClick={() => setRejectOpen(true)}
                 disabled={selectedEntryIds.size === 0}
               >
-                Reject Selected ({selectedEntryIds.size})
+                {t('approvals.selection.rejectSelected', { count: selectedEntryIds.size })}
               </Button>
               <Button
                 type="primary"
@@ -453,40 +457,47 @@ export function ApprovalsPage() {
                 onClick={handleApproveSelected}
                 loading={approveMutation.isPending}
                 disabled={selectedEntryIds.size === 0}
-                style={{ background: BRAND.teal }}
               >
-                Approve Selected ({selectedEntryIds.size})
+                {t('approvals.selection.approveSelected', { count: selectedEntryIds.size })}
               </Button>
             </Space>
           </Space>
         }
       >
         {/* Summary */}
-        <Card size="small" style={{ marginBottom: 16 }}>
-          <Space size="large">
-            <div>
-              <Text type="secondary">Total Time</Text>
-              <div>
-                <Text strong style={{ fontSize: 20 }}>{timesheetDetails?.formatted_total}</Text>
-              </div>
-            </div>
-            <div>
-              <Text type="secondary">Entries</Text>
-              <div>
-                <Text strong style={{ fontSize: 20 }}>{timesheetDetails?.entries?.length || 0}</Text>
-              </div>
-            </div>
-            <div>
-              <Text type="secondary">Default Rate</Text>
-              <div>
-                <Text strong style={{ fontSize: 20 }}>${timesheetDetails?.user?.hourly_rate || 0}/hr</Text>
-              </div>
-            </div>
-          </Space>
-        </Card>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col xs={24} sm={8}>
+            <Card size="small">
+              <Statistic
+                title={t('approvals.details.totalTime')}
+                value={timesheetDetails?.formatted_total || '0:00'}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: '#6366f1' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card size="small">
+              <Statistic
+                title={t('approvals.details.entries')}
+                value={timesheetDetails?.entries?.length || 0}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card size="small">
+              <Statistic
+                title={t('approvals.details.defaultRate')}
+                value={`$${timesheetDetails?.user?.hourly_rate || 0}/hr`}
+                prefix={<DollarOutlined />}
+              />
+            </Card>
+          </Col>
+        </Row>
 
         {/* Entries Table with Checkboxes */}
         <Table
+          scroll={{ x: 700 }}
           columns={entryColumns}
           dataSource={timesheetDetails?.entries || []}
           rowKey="id"
@@ -501,22 +512,22 @@ export function ApprovalsPage() {
 
       {/* Reject Modal */}
       <Modal
-        title="Reject Selected Entries"
+        title={t('approvals.rejectModal.title')}
         open={rejectOpen}
         onCancel={() => {
           setRejectOpen(false);
           setRejectReason('');
         }}
         onOk={handleRejectSelected}
-        okText={`Reject ${selectedEntryIds.size} Entries`}
+        okText={t('approvals.rejectModal.okText', { count: selectedEntryIds.size })}
         okButtonProps={{ danger: true, loading: rejectMutation.isPending }}
       >
         <Paragraph type="secondary">
-          Please provide a reason for rejecting {selectedEntryIds.size} entries. The developer will be notified.
+          {t('approvals.rejectModal.description', { count: selectedEntryIds.size })}
         </Paragraph>
         <Input.TextArea
           rows={3}
-          placeholder="Reason for rejection..."
+          placeholder={t('approvals.rejectModal.placeholder')}
           value={rejectReason}
           onChange={(e) => setRejectReason(e.target.value)}
         />

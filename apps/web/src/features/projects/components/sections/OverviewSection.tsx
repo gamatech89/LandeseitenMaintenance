@@ -155,7 +155,7 @@ export function OverviewSection({
               : 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
             borderColor: '#667eea',
           }} 
-          bodyStyle={{ padding: 20 }}
+          styles={{ body: { padding: 20 } }}
         >
           <Row align="middle" gutter={16}>
             <Col>
@@ -229,7 +229,7 @@ export function OverviewSection({
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {/* Uptime Status */}
         <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
-          <Card style={{ ...cardStyle, width: '100%' }} bodyStyle={{ padding: 20 }}>
+          <Card style={{ ...cardStyle, width: '100%' }} styles={{ body: { padding: 20 } }}>
             <Space align="start">
               <div style={{
                 width: 40,
@@ -261,7 +261,7 @@ export function OverviewSection({
 
         {/* Domain Expiry */}
         <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
-          <Card style={{ ...cardStyle, width: '100%' }} bodyStyle={{ padding: 20 }}>
+          <Card style={{ ...cardStyle, width: '100%' }} styles={{ body: { padding: 20 } }}>
             <Space align="start">
               <div style={{
                 width: 40,
@@ -300,7 +300,7 @@ export function OverviewSection({
 
         {/* SSL Certificate */}
         <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
-          <Card style={{ ...cardStyle, width: '100%' }} bodyStyle={{ padding: 20 }}>
+          <Card style={{ ...cardStyle, width: '100%' }} styles={{ body: { padding: 20 } }}>
             <Space align="start">
               <div style={{
                 width: 40,
@@ -331,7 +331,7 @@ export function OverviewSection({
 
         {/* Last Check */}
         <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
-          <Card style={{ ...cardStyle, width: '100%' }} bodyStyle={{ padding: 20 }}>
+          <Card style={{ ...cardStyle, width: '100%' }} styles={{ body: { padding: 20 } }}>
             <Space align="start">
               <div style={{
                 width: 40,
@@ -364,7 +364,7 @@ export function OverviewSection({
       {project.wp_version && (
         <>
           <Title level={5} style={{ marginBottom: 16 }}>WordPress Info</Title>
-          <Card style={cardStyle} bodyStyle={{ padding: 24 }}>
+          <Card style={cardStyle} styles={{ body: { padding: 24 } }}>
             <Row gutter={[24, 16]}>
               <Col xs={12} sm={6}>
                 <Statistic 
@@ -406,7 +406,7 @@ export function OverviewSection({
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             {/* Posts */}
             <Col xs={12} sm={6}>
-              <Card style={cardStyle} bodyStyle={{ padding: 20 }}>
+              <Card style={cardStyle} styles={{ body: { padding: 20 } }}>
                 <Space align="start">
                   <div style={{
                     width: 40,
@@ -444,7 +444,7 @@ export function OverviewSection({
 
             {/* Pages */}
             <Col xs={12} sm={6}>
-              <Card style={cardStyle} bodyStyle={{ padding: 20 }}>
+              <Card style={cardStyle} styles={{ body: { padding: 20 } }}>
                 <Space align="start">
                   <div style={{
                     width: 40,
@@ -475,7 +475,7 @@ export function OverviewSection({
 
             {/* Media */}
             <Col xs={12} sm={6}>
-              <Card style={cardStyle} bodyStyle={{ padding: 20 }}>
+              <Card style={cardStyle} styles={{ body: { padding: 20 } }}>
                 <Space align="start">
                   <div style={{
                     width: 40,
@@ -506,7 +506,7 @@ export function OverviewSection({
 
             {/* Users + Comments */}
             <Col xs={12} sm={6}>
-              <Card style={cardStyle} bodyStyle={{ padding: 20 }}>
+              <Card style={cardStyle} styles={{ body: { padding: 20 } }}>
                 <Space align="start">
                   <div style={{
                     width: 40,
@@ -576,7 +576,7 @@ function BackupInfoCard({ cardStyle }: { cardStyle: React.CSSProperties }) {
       <Title level={5} style={{ marginBottom: 16 }}>
         <CloudOutlined /> Backup Info
       </Title>
-      <Card style={cardStyle} bodyStyle={{ padding: 20 }}>
+      <Card style={cardStyle} styles={{ body: { padding: 20 } }}>
         <Row gutter={24} align="middle">
           <Col>
             <div style={{
@@ -689,7 +689,7 @@ function TeamSection({ project, cardStyle }: { project: Project; cardStyle: Reac
       <Title level={5} style={{ marginBottom: 16 }}>
         <TeamOutlined /> Team
       </Title>
-      <Card style={cardStyle} bodyStyle={{ padding: 24 }}>
+      <Card style={cardStyle} styles={{ body: { padding: 24 } }}>
         <Row gutter={[24, 16]}>
           <Col xs={24} sm={12}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

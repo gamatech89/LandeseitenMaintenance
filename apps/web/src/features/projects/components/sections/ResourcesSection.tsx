@@ -313,7 +313,7 @@ export default function ResourcesSection({ project }: ResourcesSectionProps) {
             borderRadius: 12,
             background: isDark ? '#1e293b' : '#fff',
           }}
-          bodyStyle={{ padding: 0 }}
+          styles={{ body: { padding: 0 } }}
         >
           <Tabs
             defaultActiveKey="links"

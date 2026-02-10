@@ -32,19 +32,18 @@ export function GlassStatCard({
       onClick={onClick}
       style={{
         borderRadius: 16,
-        border: 'none',
+        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
         background: isDark 
-          ? 'linear-gradient(135deg, rgba(107, 33, 168, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%)'
-          : 'linear-gradient(135deg, rgba(107, 33, 168, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%)',
-        backdropFilter: 'blur(10px)',
+          ? 'rgba(255,255,255,0.04)'
+          : '#ffffff',
         boxShadow: isDark 
-          ? '0 4px 24px rgba(0, 0, 0, 0.2)'
-          : '0 4px 24px rgba(107, 33, 168, 0.1)',
+          ? 'none'
+          : '0 1px 3px rgba(0,0,0,0.04)',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
         height: '100%',
       }}
-      bodyStyle={{ padding: 20 }}
+      styles={{ body: { padding: 20 } }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>

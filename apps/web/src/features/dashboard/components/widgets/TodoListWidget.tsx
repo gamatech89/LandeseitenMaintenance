@@ -1,6 +1,7 @@
 import { Card, List, Tag, Typography, Button, Space, Empty } from 'antd';
 import { CheckCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '@/stores/theme';
 import { getPriorityConfig, formatDate } from '@lsm/utils';
 
@@ -13,6 +14,7 @@ interface TodoListWidgetProps {
 
 export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -21,12 +23,12 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
       title={
         <Space>
           <CheckCircleOutlined style={{ color: '#22c55e' }} />
-          <span>My Tasks</span>
+          <span>{t('dashboard.myTasks')}</span>
         </Space>
       }
       extra={
         <Button type="link" onClick={() => navigate('/projects')}>
-          View all
+          {t('common.viewAll')}
         </Button>
       }
       style={{ 
@@ -37,7 +39,7 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
         display: 'flex',
         flexDirection: 'column',
       }}
-      bodyStyle={{ padding: 0, flex: 1, overflow: 'auto' }}
+      styles={{ body: { padding: 0, flex: 1, overflow: 'auto' } }}
     >
       <div style={{ maxHeight: 400, overflowY: 'auto' }}>
         <List
@@ -47,7 +49,7 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
             emptyText: (
               <Empty 
                 image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                description="No pending tasks assigned to you" 
+                description={t('dashboard.noPendingTasks')} 
               />
             )
           }}
@@ -78,7 +80,7 @@ export function TodoListWidget({ todos = [], loading = false }: TodoListWidgetPr
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {todo.project?.name || 'Unknown Project'}
+                      {todo.project?.name || t('common.unknownProject')}
                     </Text>
                     {todo.due_date && (
                        <Space size={6}>
