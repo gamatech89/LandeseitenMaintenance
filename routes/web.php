@@ -24,6 +24,32 @@ Route::get('/', function () {
 });
 
 // =====================================================
+// HEALTH CHECK ENDPOINTS (for load balancers / monitoring)
+// =====================================================
+Route::get('/health', function () {
+    try {
+        // Check database connection
+        \DB::connection()->getPdo();
+        $dbStatus = 'ok';
+    } catch (\Exception $e) {
+        $dbStatus = 'error';
+    }
+    
+    return response()->json([
+        'status' => $dbStatus === 'ok' ? 'healthy' : 'unhealthy',
+        'timestamp' => now()->toIso8601String(),
+        'checks' => [
+            'database' => $dbStatus,
+            'cache' => cache()->has('health_check') || cache()->put('health_check', true, 10) ? 'ok' : 'error',
+        ],
+    ], $dbStatus === 'ok' ? 200 : 503);
+});
+
+Route::get('/up', function () {
+    return response('OK', 200);
+});
+
+// =====================================================
 // PUBLIC CREDENTIAL SHARE ROUTES (no auth required)
 // =====================================================
 Route::prefix('share')->name('share.')->group(function () {
@@ -116,4 +142,6 @@ if (app()->environment('local')) {
     });
 }
 
-require __DIR__.'/auth.php';
+// Web auth routes disabled - React SPA uses API routes for authentication
+// See: routes/api.php -> /api/v1/auth/*
+// require __DIR__.'/auth.php';

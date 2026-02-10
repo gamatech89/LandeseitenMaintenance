@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -80,6 +81,7 @@ export function ChatMessage({ role, content, isLoading, isDark = true }: ChatMes
             ) : (
               <div className={`prose prose-sm max-w-none ${isDark ? 'prose-invert' : ''}`}>
                 <ReactMarkdown
+                  rehypePlugins={[rehypeSanitize]}
                   components={{
                     p: ({ children }: { children?: ReactNode }) => (
                       <p className={`mb-2 last:mb-0 leading-relaxed ${colors.text}`}>{children}</p>

@@ -48,8 +48,11 @@ class ProjectResource extends JsonResource
             // Health monitoring data
             'response_time_ms' => $this->response_time_ms,
             'last_health_check_at' => $this->last_health_check_at?->toISOString(),
+            'last_health_details' => $this->last_health_details,
             'ssl_status' => $this->ssl_status,
             'ssl_expires_at' => $this->ssl_expires_at?->toISOString(),
+            'domain_expires_at' => $this->domain_expires_at?->toISOString(),
+            'domain_registrar' => $this->domain_registrar,
             'wp_version' => $this->wp_version,
             'php_version' => $this->php_version,
             'outdated_plugins_count' => $this->outdated_plugins_count,
@@ -68,6 +71,7 @@ class ProjectResource extends JsonResource
             'credentials' => CredentialResource::collection($this->whenLoaded('credentials')),
             'todos' => TodoResource::collection($this->whenLoaded('todos')),
             'resources' => ResourceResource::collection($this->whenLoaded('resources')),
+            'library_resources' => LibraryResourceResource::collection($this->whenLoaded('libraryResources')),
             'maintenance_reports' => MaintenanceReportResource::collection($this->whenLoaded('maintenanceReports')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             

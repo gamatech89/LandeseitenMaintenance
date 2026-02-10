@@ -11,7 +11,7 @@
 
 import { useState, Suspense, lazy, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Button, Typography, Badge, Space, Switch, Tooltip, AutoComplete, Tag, Input } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Typography, Space, Switch, Tooltip, AutoComplete, Tag, Input } from 'antd';
 import {
   DashboardOutlined,
   ProjectOutlined,
@@ -22,7 +22,6 @@ import {
   MenuUnfoldOutlined,
   LogoutOutlined,
   UserOutlined,
-  BellOutlined,
   SearchOutlined,
   HistoryOutlined,
   ClockCircleOutlined,
@@ -34,6 +33,8 @@ import {
   GlobalOutlined,
   MedicineBoxOutlined,
   CustomerServiceOutlined,
+  FolderOpenOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import type { ItemType } from 'antd/es/menu/interface';
 import type { MenuProps } from 'antd';
@@ -91,6 +92,11 @@ function useMenuItems(): ItemType[] {
           key: '/vault',
           icon: <LockOutlined />,
           label: <Link to="/vault">{t('nav.vault')}</Link>,
+        },
+        {
+          key: '/library',
+          icon: <FolderOpenOutlined />,
+          label: <Link to="/library">Library</Link>,
         },
         // Support Tickets - only for PM/Admin
         ...(canManageProjects ? [{
@@ -165,6 +171,11 @@ function useMenuItems(): ItemType[] {
           key: '/activity',
           icon: <HistoryOutlined />,
           label: <Link to="/activity">{t('nav.activityLog')}</Link>,
+        },
+        {
+          key: '/settings',
+          icon: <SettingOutlined />,
+          label: <Link to="/settings">Settings</Link>,
         }
       );
     }
@@ -397,12 +408,13 @@ export function AuthenticatedLayout() {
               ) : null}
             >
               <Input
-                prefix={<SearchOutlined style={{ color: textSecondary }} />}
+                prefix={<SearchOutlined style={{ color: textSecondary, marginRight: 8 }} />}
                 style={{
                   height: 40,
                   borderRadius: 20,
                   background: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
                   border: 'none',
+                  paddingLeft: 16,
                 }}
               />
             </AutoComplete>

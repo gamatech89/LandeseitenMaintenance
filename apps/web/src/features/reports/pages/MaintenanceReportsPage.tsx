@@ -68,7 +68,7 @@ export function MaintenanceReportsPage() {
   const createMutation = useMutation({
     mutationFn: (data: {
       report_date: string;
-      type: string;
+      type: 'monthly' | 'weekly' | 'ad-hoc';
       summary: string;
       tasks_completed?: string[];
       issues_found?: string[];
@@ -109,7 +109,7 @@ export function MaintenanceReportsPage() {
 
   const handleSubmit = (values: {
     report_date: dayjs.Dayjs;
-    type: string;
+    type: 'monthly' | 'weekly' | 'ad-hoc';
     summary: string;
     tasks_completed?: string;
     issues_found?: string;

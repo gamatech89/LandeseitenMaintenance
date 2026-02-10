@@ -13,7 +13,6 @@ import {
   Upload,
   App,
   Button,
-  Checkbox,
 } from 'antd';
 import { UploadOutlined, LinkOutlined, FileOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -172,10 +171,6 @@ export function ResourceFormModal({
           rules={[{ required: true, message: 'Please enter a title' }]}
         >
           <Input placeholder="e.g. Design Files, Documentation" />
-        </Form.Item>
-
-        <Form.Item name="is_quick_action" valuePropName="checked">
-          <Checkbox>Show in Quick Actions</Checkbox>
         </Form.Item>
 
         <Form.Item name="type" label="Type">

@@ -174,31 +174,42 @@ export function VaultPage() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 180,
       render: (_, record) => (
         <Space size="small">
           <Button 
             type="text" 
-            icon={<ShareAltOutlined style={{ color: '#8b5cf6' }} />} 
+            size="small"
+            icon={<ShareAltOutlined />} 
             onClick={() => setShareCredential(record)}
-          />
+            style={{ color: '#8b5cf6' }}
+          >
+            Share
+          </Button>
           <Button 
             type="text" 
-            icon={<EditOutlined style={{ color: '#64748b' }} />}
+            size="small"
+            icon={<EditOutlined />}
             onClick={() => setEditCredential(record)}
-          />
+            style={{ color: '#64748b' }}
+          >
+            Edit
+          </Button>
           <Popconfirm
              title="Delete credential"
-             description="Are you sure required this?"
+             description="Are you sure you want to delete this?"
              onConfirm={() => deleteMutation.mutate(record.id)}
              okText="Yes"
              cancelText="No"
           >
             <Button 
               type="text" 
+              size="small"
               danger 
               icon={<DeleteOutlined />} 
-            />
+            >
+              Delete
+            </Button>
           </Popconfirm>
         </Space>
       ),

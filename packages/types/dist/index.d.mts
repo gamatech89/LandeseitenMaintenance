@@ -45,6 +45,12 @@ interface Project {
     outdated_plugins_count: number | null;
     last_health_details: Record<string, unknown> | null;
     health_check_secret: string | null;
+    uptime_monitoring_enabled: boolean | null;
+    ssl_alerts_enabled: boolean | null;
+    domain_alerts_enabled: boolean | null;
+    notification_preferences: Record<string, unknown> | null;
+    domain_expires_at: string | null;
+    domain_registrar: string | null;
     manager_id: number | null;
     developer_id: number | null;
     manager?: User;
@@ -57,6 +63,7 @@ interface Project {
     tags?: Tag[];
     credentials_count?: number;
     todos_count?: number;
+    pending_todos_count?: number;
     resources_count?: number;
     maintenance_reports_count?: number;
     highest_todo_priority?: TodoPriority;
@@ -244,6 +251,10 @@ interface CreateProjectRequest {
 }
 interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
     health_check_secret?: string;
+    uptime_monitoring_enabled?: boolean;
+    ssl_alerts_enabled?: boolean;
+    domain_alerts_enabled?: boolean;
+    notification_preferences?: Record<string, unknown>;
 }
 interface CreateCredentialRequest {
     title: string;

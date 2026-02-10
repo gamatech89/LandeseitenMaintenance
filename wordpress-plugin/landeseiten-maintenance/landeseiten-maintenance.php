@@ -73,6 +73,8 @@ final class Landeseiten_Maintenance {
         require_once LSM_PLUGIN_DIR . 'includes/class-lsm-api.php';
         require_once LSM_PLUGIN_DIR . 'includes/class-lsm-support.php';
         require_once LSM_PLUGIN_DIR . 'includes/class-lsm-maintenance-mode.php';
+        require_once LSM_PLUGIN_DIR . 'includes/class-lsm-backup.php';
+        require_once LSM_PLUGIN_DIR . 'includes/class-lsm-php-errors.php';
 
         // Admin
         if (is_admin()) {
@@ -100,6 +102,78 @@ final class Landeseiten_Maintenance {
         // Enqueue scripts
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+
+        // Security filters
+        $this->init_security_filters();
+    }
+
+    /**
+     * Initialize security filters based on settings.
+     */
+    private function init_security_filters() {
+        // XML-RPC blocking
+        if (!get_option('lsm_xmlrpc_enabled', true)) {
+            add_filter('xmlrpc_enabled', '__return_false');
+            add_filter('xmlrpc_methods', '__return_empty_array');
+        }
+
+        // REST API restrictions (block public access but allow authenticated)
+        if (!get_option('lsm_rest_api_public', true)) {
+            add_filter('rest_authentication_errors', function($result) {
+                // Skip our own namespace
+                if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/lsm/v1/') !== false) {
+                    return $result;
+                }
+                
+                if (!is_user_logged_in()) {
+                    return new WP_Error(
+                        'rest_not_logged_in',
+                        __('You are not currently logged in.'),
+                        ['status' => 401]
+                    );
+                }
+                return $result;
+            }, 99);
+        }
+
+        // File editing disabled - remove capabilities for editing plugins/themes
+        if (get_option('lsm_file_editing_disabled', false)) {
+            // Use map_meta_cap to block file editing capabilities (most reliable method)
+            add_filter('map_meta_cap', function($caps, $cap, $user_id, $args) {
+                // Block these specific capabilities
+                $blocked_caps = ['edit_plugins', 'edit_themes', 'edit_files'];
+                if (in_array($cap, $blocked_caps)) {
+                    // Return do_not_allow to prevent this capability
+                    return ['do_not_allow'];
+                }
+                return $caps;
+            }, 10, 4);
+            
+            // Also define the constant for good measure if not already defined
+            if (!defined('DISALLOW_FILE_EDIT')) {
+                define('DISALLOW_FILE_EDIT', true);
+            }
+        }
+
+        // Security headers - inject via PHP when enabled
+        if (get_option('lsm_security_headers_enabled', false)) {
+            add_action('send_headers', function() {
+                // Prevent clickjacking
+                header('X-Frame-Options: SAMEORIGIN');
+                // Prevent MIME type sniffing
+                header('X-Content-Type-Options: nosniff');
+                // XSS protection for legacy browsers
+                header('X-XSS-Protection: 1; mode=block');
+                // Control referrer information
+                header('Referrer-Policy: strict-origin-when-cross-origin');
+                // Restrict browser features
+                header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+                // HSTS - only on HTTPS
+                if (is_ssl()) {
+                    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+                }
+            });
+        }
     }
 
     /**
@@ -110,13 +184,16 @@ final class Landeseiten_Maintenance {
         load_plugin_textdomain('landeseiten-maintenance', false, dirname(LSM_PLUGIN_BASENAME) . '/languages');
 
         // Initialize components
-        new LSM_Logger();
+        LSM_Logger::init();
         new LSM_Health();
         new LSM_Auth();
         new LSM_Recovery();
         new LSM_Actions();
         new LSM_Support();
         new LSM_Maintenance_Mode();
+
+        // Initialize PHP error handling
+        LSM_Php_Errors::init();
 
         if (is_admin()) {
             new LSM_Admin();

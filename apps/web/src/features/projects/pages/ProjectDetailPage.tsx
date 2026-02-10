@@ -76,7 +76,7 @@ import { TodoDetailModal } from '../components/TodoDetailModal';
 import { MaintenanceReportFormModal } from '../components/MaintenanceReportFormModal';
 import { WordPressManagementTab } from '../components/WordPressManagementTab';
 import { SupportTicketsTab } from '../components/SupportTicketsTab';
-import type { Todo, MaintenanceReport } from '@lsm/types';
+import type { Todo, MaintenanceReport, TodoPriority } from '@lsm/types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -289,7 +289,7 @@ export function ProjectDetailPage() {
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
-      render: (p: string) => {
+      render: (p: TodoPriority) => {
         const config = getPriorityConfig(p);
         return <Tag color={config.color}>{p}</Tag>;
       },
@@ -867,9 +867,9 @@ export function ProjectDetailPage() {
                 <div>
                   <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>Developers</Text>
                   <div style={{ marginTop: 4 }}>
-                    {project.developers?.length > 0 ? (
+                    {(project.developers?.length ?? 0) > 0 ? (
                       <Space wrap size={4}>
-                        {project.developers.map((dev: any) => (
+                        {project.developers?.map((dev: any) => (
                           <Tag key={dev.id} color="cyan">{dev.name}</Tag>
                         ))}
                       </Space>

@@ -194,6 +194,34 @@ class RmbController extends Controller
     }
 
     /**
+     * Delete a plugin.
+     */
+    public function deletePlugin(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $request->validate(['slug' => 'required|string']);
+
+        $rmb = RmbService::for($project);
+
+        if (!$rmb->isConfigured()) {
+            return response()->json(['error' => 'RMB not configured'], 400);
+        }
+
+        $result = $rmb->deletePlugin($request->input('slug'));
+
+        if (!$result || isset($result['error'])) {
+            return response()->json($result ?? ['error' => 'Failed to delete plugin'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plugin deleted successfully',
+            ...$result,
+        ]);
+    }
+
+    /**
      * Update WordPress core.
      */
     public function updateCore(Project $project): JsonResponse

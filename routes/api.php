@@ -19,7 +19,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // PUBLIC ROUTES (No authentication required)
     // =====================================================
     
-    Route::post('/login', [V1\AuthController::class, 'login'])->name('login');
+    Route::post('/login', [V1\AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login');
     
     // Public credential share verification (if needed for mobile)
     // Route::post('/share/credential/{token}/verify', [V1\CredentialShareController::class, 'verify']);
@@ -60,11 +62,23 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('ai.chat');
 
         // -------------------------------------------------
+        // SETTINGS (Admin only)
+        // -------------------------------------------------
+        Route::get('/settings', [V1\SettingsController::class, 'index'])
+            ->middleware('role:admin')
+            ->name('settings.index');
+        Route::put('/settings', [V1\SettingsController::class, 'update'])
+            ->middleware('role:admin')
+            ->name('settings.update');
+
+        // -------------------------------------------------
         // PROJECTS
         // -------------------------------------------------
         Route::apiResource('projects', V1\ProjectController::class);
         Route::post('/projects/{project}/check-health', [V1\ProjectController::class, 'checkHealth'])
             ->name('projects.check-health');
+        Route::get('/projects/{project}/uptime-stats', [V1\ProjectController::class, 'uptimeStats'])
+            ->name('projects.uptime-stats');
         Route::get('/projects-filter-options', [V1\ProjectController::class, 'filterOptions'])
             ->name('projects.filter-options');
         Route::get('/projects-stats', [V1\ProjectController::class, 'stats'])
@@ -79,6 +93,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Status & Health
             Route::get('/status', [V1\LsmController::class, 'status'])->name('status');
             Route::get('/health', [V1\LsmController::class, 'health'])->name('health');
+            Route::get('/plugins', [V1\LsmController::class, 'getPlugins'])->name('plugins');
+            Route::get('/themes', [V1\LsmController::class, 'getThemes'])->name('themes');
             
             // SSO Login
             Route::post('/login-token', [V1\LsmController::class, 'generateLoginToken'])->name('login-token');
@@ -86,13 +102,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Cache & Optimization
             Route::post('/clear-cache', [V1\LsmController::class, 'clearCache'])->name('clear-cache');
             Route::post('/optimize-db', [V1\LsmController::class, 'optimizeDatabase'])->name('optimize-db');
+            Route::post('/cleanup-db', [V1\LsmController::class, 'cleanupDatabase'])->name('cleanup-db');
+            Route::get('/database-stats', [V1\LsmController::class, 'getDatabaseStats'])->name('database-stats');
             Route::post('/flush-rewrite', [V1\LsmController::class, 'flushRewrite'])->name('flush-rewrite');
             
             // Updates
             Route::get('/updates', [V1\LsmController::class, 'getUpdates'])->name('updates');
-            // Route::post('/update-plugin', [V1\LsmController::class, 'updatePlugin'])->name('update-plugin'); // Not implemented in LSM Service yet
+            Route::post('/update-plugin', [V1\LsmController::class, 'updatePlugin'])->name('update-plugin');
             Route::post('/update-all-plugins', [V1\LsmController::class, 'updateAllPlugins'])->name('update-all-plugins');
             Route::post('/update-core', [V1\LsmController::class, 'updateCore'])->name('update-core');
+            
+            // Plugin management
+            Route::post('/activate-plugin', [V1\LsmController::class, 'activatePlugin'])->name('activate-plugin');
+            Route::post('/deactivate-plugin', [V1\LsmController::class, 'deactivatePlugin'])->name('deactivate-plugin');
+            Route::post('/delete-plugin', [V1\LsmController::class, 'deletePlugin'])->name('delete-plugin');
             
             // Recovery/Killswitch
             Route::get('/recovery-status', [V1\LsmController::class, 'recoveryStatus'])->name('recovery-status');
@@ -100,12 +123,32 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/disable-maintenance', [V1\LsmController::class, 'disableMaintenance'])->name('disable-maintenance');
             Route::post('/disable-plugins', [V1\LsmController::class, 'disablePlugins'])->name('disable-plugins');
             Route::post('/restore-plugins', [V1\LsmController::class, 'restorePlugins'])->name('restore-plugins');
-            Route::post('/restore-plugins', [V1\LsmController::class, 'restorePlugins'])->name('restore-plugins');
-            // Route::post('/switch-theme', [V1\LsmController::class, 'switchTheme'])->name('switch-theme'); // Not supported in simple LSM API
+            Route::post('/switch-theme', [V1\LsmController::class, 'switchTheme'])->name('switch-theme');
+            Route::post('/activate-theme', [V1\LsmController::class, 'activateTheme'])->name('activate-theme');
             Route::post('/emergency-recovery', [V1\LsmController::class, 'emergencyRecovery'])->name('emergency-recovery');
             
             // Download Plugin
             Route::get('/download-plugin', [V1\LsmController::class, 'downloadPlugin'])->name('download-plugin');
+            
+            // PHP Error Monitoring (fetch from WordPress)
+            Route::get('/php-errors', [V1\LsmController::class, 'getPhpErrors'])->name('php-errors');
+            Route::get('/php-errors/stats', [V1\LsmController::class, 'getPhpErrorStats'])->name('php-errors.stats');
+            Route::post('/php-errors/sync', [V1\LsmController::class, 'syncPhpErrors'])->name('php-errors.sync');
+            Route::post('/php-errors/clear', [V1\LsmController::class, 'clearPhpErrors'])->name('php-errors.clear');
+            
+            // Activity Log (fetch from WordPress)
+            Route::get('/activity', [V1\LsmController::class, 'getActivity'])->name('activity');
+            Route::get('/activity/stats', [V1\LsmController::class, 'getActivityStats'])->name('activity.stats');
+            
+            // Site Info & Stats
+            Route::get('/site-info', [V1\LsmController::class, 'getSiteInfo'])->name('site-info');
+            Route::get('/users', [V1\LsmController::class, 'getUsers'])->name('users');
+            
+            // Security Settings
+            Route::get('/security-settings', [V1\LsmController::class, 'getSecuritySettings'])->name('security-settings');
+            Route::post('/security-settings', [V1\LsmController::class, 'updateSecuritySettings'])->name('security-settings.update');
+            Route::get('/security-headers', [V1\LsmController::class, 'getSecurityHeaders'])->name('security-headers');
+            Route::get('/security-headers/snippets', [V1\LsmController::class, 'getSecurityHeaderSnippets'])->name('security-headers.snippets');
         });
 
         // -------------------------------------------------
@@ -139,6 +182,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('resources.download');
 
         // -------------------------------------------------
+        // LIBRARY RESOURCES (Global shared files)
+        // -------------------------------------------------
+        Route::apiResource('library-resources', V1\LibraryResourceController::class);
+        Route::get('/library-resources/{library_resource}/download', [V1\LibraryResourceController::class, 'download'])
+            ->name('library-resources.download');
+        Route::post('/library-resources/{library_resource}/link', [V1\LibraryResourceController::class, 'linkToProject'])
+            ->name('library-resources.link');
+        Route::post('/library-resources/{library_resource}/unlink', [V1\LibraryResourceController::class, 'unlinkFromProject'])
+            ->name('library-resources.unlink');
+        Route::get('/library-resources-categories', [V1\LibraryResourceController::class, 'categories'])
+            ->name('library-resources.categories');
+
+        // -------------------------------------------------
         // MAINTENANCE REPORTS (nested under projects)
         // -------------------------------------------------
         Route::apiResource('projects.maintenance-reports', V1\MaintenanceReportController::class)->shallow();
@@ -146,6 +202,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('maintenance-reports.pdf');
         Route::get('/maintenance-reports/suggestions', [V1\MaintenanceReportController::class, 'suggestions'])
             ->name('maintenance-reports.suggestions');
+
+        // -------------------------------------------------
+        // BACKUPS (nested under projects)
+        // -------------------------------------------------
+        // Settings must come BEFORE apiResource to avoid conflict with shallow GET /backups/{backup}
+        Route::get('/backups/settings', [V1\BackupController::class, 'settings'])
+            ->name('backups.settings');
+        Route::apiResource('projects.backups', V1\BackupController::class)->shallow();
+        Route::get('/backups/{backup}/download', [V1\BackupController::class, 'download'])
+            ->name('backups.download');
+        Route::post('/backups/{backup}/restore', [V1\BackupController::class, 'restore'])
+            ->name('backups.restore');
+        Route::get('/projects/{project}/backups-stats', [V1\BackupController::class, 'stats'])
+            ->name('projects.backups.stats');
+
+        // -------------------------------------------------
+        // PHP ERRORS (nested under projects)
+        // -------------------------------------------------
+        Route::apiResource('projects.php-errors', V1\PhpErrorController::class)
+            ->shallow()
+            ->except(['update']); // Errors are logged, not updated
+        Route::post('/php-errors/{php_error}/resolve', [V1\PhpErrorController::class, 'resolve'])
+            ->name('php-errors.resolve');
+        Route::delete('/projects/{project}/php-errors', [V1\PhpErrorController::class, 'clear'])
+            ->name('projects.php-errors.clear');
+        Route::get('/projects/{project}/php-errors-stats', [V1\PhpErrorController::class, 'stats'])
+            ->name('projects.php-errors.stats');
+
 
         // -------------------------------------------------
         // SUPPORT TICKETS

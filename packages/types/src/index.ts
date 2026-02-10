@@ -81,6 +81,16 @@ export interface Project {
   last_health_details: Record<string, unknown> | null;
   health_check_secret: string | null;
 
+  // Monitoring toggles
+  uptime_monitoring_enabled: boolean | null;
+  ssl_alerts_enabled: boolean | null;
+  domain_alerts_enabled: boolean | null;
+  notification_preferences: Record<string, unknown> | null;
+
+  // Domain expiry (WHOIS)
+  domain_expires_at: string | null;
+  domain_registrar: string | null;
+
   // Team (IDs)
   manager_id: number | null;
   developer_id: number | null;
@@ -98,6 +108,7 @@ export interface Project {
   // Counts (when loaded)
   credentials_count?: number;
   todos_count?: number;
+  pending_todos_count?: number;
   resources_count?: number;
   maintenance_reports_count?: number;
 
@@ -342,6 +353,10 @@ export interface CreateProjectRequest {
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
   health_check_secret?: string;
+  uptime_monitoring_enabled?: boolean;
+  ssl_alerts_enabled?: boolean;
+  domain_alerts_enabled?: boolean;
+  notification_preferences?: Record<string, unknown>;
 }
 
 export interface CreateCredentialRequest {

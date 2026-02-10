@@ -242,7 +242,7 @@ class RmbService
      */
     public function updatePlugin(string $slug): ?array
     {
-        return $this->post('/actions/update-plugin', ['slug' => $slug]);
+        return $this->post('/plugins/update', ['slug' => $slug]);
     }
 
     /**
@@ -250,7 +250,7 @@ class RmbService
      */
     public function updateAllPlugins(): ?array
     {
-        return $this->post('/actions/update-all-plugins');
+        return $this->post('/updates/plugins');
     }
 
     /**
@@ -274,7 +274,7 @@ class RmbService
      */
     public function activatePlugin(string $slug): ?array
     {
-        return $this->post('/actions/activate-plugin', ['slug' => $slug]);
+        return $this->post('/plugins/activate', ['slug' => $slug]);
     }
 
     /**
@@ -282,7 +282,15 @@ class RmbService
      */
     public function deactivatePlugin(string $slug): ?array
     {
-        return $this->post('/actions/deactivate-plugin', ['slug' => $slug]);
+        return $this->post('/plugins/deactivate', ['slug' => $slug]);
+    }
+
+    /**
+     * Delete a plugin.
+     */
+    public function deletePlugin(string $slug): ?array
+    {
+        return $this->post('/plugins/delete', ['slug' => $slug]);
     }
 
     /**

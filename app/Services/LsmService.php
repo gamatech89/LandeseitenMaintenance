@@ -124,6 +124,23 @@ class LsmService
         return $this->get('/updates');
     }
 
+    /**
+     * Get all installed plugins from WordPress.
+     */
+    public function getPlugins(): ?array
+    {
+        return $this->get('/plugins');
+    }
+
+    /**
+     * Get all installed themes from WordPress.
+     */
+    public function getThemes(): ?array
+    {
+        return $this->get('/themes');
+    }
+
+
     public function enableMaintenance(): ?array
     {
         return $this->post('/maintenance/enable');
@@ -144,6 +161,22 @@ class LsmService
         return $this->post('/database/optimize');
     }
 
+    /**
+     * Cleanup database - removes revisions, transients, drafts, spam, etc.
+     */
+    public function cleanupDatabase(array $options = []): ?array
+    {
+        return $this->post('/database/cleanup', $options);
+    }
+
+    /**
+     * Get database statistics for cleanup preview.
+     */
+    public function getDatabaseStats(): ?array
+    {
+        return $this->get('/database/stats');
+    }
+
     public function flushRewriteRules(): ?array
     {
         return $this->post('/rewrite/flush');
@@ -160,6 +193,40 @@ class LsmService
          return $this->post('/updates/plugins');
     }
 
+    /**
+     * Update a single plugin.
+     */
+    public function updatePlugin(string $slug): ?array
+    {
+        return $this->post('/plugins/update', ['slug' => $slug]);
+    }
+
+    /**
+     * Activate a single plugin.
+     */
+    public function activatePlugin(string $slug): ?array
+    {
+        return $this->post('/plugins/activate', ['slug' => $slug]);
+    }
+
+    /**
+     * Deactivate a single plugin.
+     * Note: The WordPress plugin protects itself from being deactivated remotely.
+     */
+    public function deactivatePlugin(string $slug): ?array
+    {
+        return $this->post('/plugins/deactivate', ['slug' => $slug]);
+    }
+
+    /**
+     * Delete a plugin.
+     * Note: Plugin must be deactivated first. The LSM plugin protects itself.
+     */
+    public function deletePlugin(string $slug): ?array
+    {
+        return $this->post('/plugins/delete', ['slug' => $slug]);
+    }
+
     public function disableAllPlugins(): ?array
     {
         return $this->post('/recovery/disable-plugins');
@@ -168,6 +235,23 @@ class LsmService
     public function restorePlugins(): ?array
     {
         return $this->post('/recovery/restore-plugins');
+    }
+
+    /**
+     * Activate a specific theme.
+     */
+    public function activateTheme(string $slug): ?array
+    {
+        return $this->post('/themes/activate', ['slug' => $slug]);
+    }
+
+    /**
+     * Switch to default theme.
+     */
+    public function switchTheme(): ?array
+    {
+        // The emergency recovery switch-theme functionality exists under recovery
+        return $this->post('/recovery/switch-theme');
     }
 
     public function emergencyRecovery(): ?array
@@ -183,6 +267,194 @@ class LsmService
             'dashboard_user' => auth()->user() ? auth()->user()->email : 'system',
         ]);
     }
+
+    // =========================================================================
+    // BACKUP METHODS
+    // =========================================================================
+
+    /**
+     * Create a backup on the WordPress site.
+     */
+    public function createBackup(array $options = []): ?array
+    {
+        return $this->post('/backup/create', [
+            'includes_database' => $options['includes_database'] ?? true,
+            'includes_files' => $options['includes_files'] ?? true,
+            'includes_uploads' => $options['includes_uploads'] ?? true,
+        ]);
+    }
+
+    /**
+     * Get list of backups on the WordPress site.
+     */
+    public function listBackups(): ?array
+    {
+        return $this->get('/backup/list');
+    }
+
+    /**
+     * Restore a backup on the WordPress site.
+     */
+    public function restoreBackup(string $backupFile): ?array
+    {
+        return $this->post('/backup/restore', [
+            'backup_file' => $backupFile,
+        ]);
+    }
+
+    /**
+     * Delete a backup on the WordPress site.
+     */
+    public function deleteBackup(string $backupFile): ?array
+    {
+        return $this->post('/backup/delete', [
+            'backup_file' => $backupFile,
+        ]);
+    }
+
+    // =========================================================================
+    // PHP ERROR LOGGING METHODS
+    // =========================================================================
+
+    /**
+     * Get PHP error log from WordPress site.
+     * 
+     * @param array $filters Optional filters (type, unresolved, search)
+     */
+    public function getPhpErrors(array $filters = []): ?array
+    {
+        return $this->get('/errors/list', $filters);
+    }
+
+    /**
+     * Get PHP error statistics from WordPress site.
+     */
+    public function getPhpErrorStats(): ?array
+    {
+        return $this->get('/errors/stats');
+    }
+
+    /**
+     * Resolve a PHP error on WordPress site.
+     */
+    public function resolvePhpError(string $hash): ?array
+    {
+        return $this->post('/errors/resolve', ['hash' => $hash]);
+    }
+
+    /**
+     * Clear PHP error log on WordPress site.
+     */
+    public function clearPhpErrors(): ?array
+    {
+        return $this->post('/errors/clear');
+    }
+
+    // =========================================================================
+    // Activity Log Methods
+    // =========================================================================
+
+    /**
+     * Get activity log from WordPress site.
+     * 
+     * @param int $limit Number of entries to return
+     * @param string|null $action Filter by action type
+     */
+    public function getActivity(int $limit = 50, ?string $action = null): ?array
+    {
+        $params = ['limit' => $limit];
+        if ($action) {
+            $params['action'] = $action;
+        }
+        return $this->get('/activity/list', $params);
+    }
+
+    /**
+     * Get activity statistics from WordPress site.
+     */
+    public function getActivityStats(): ?array
+    {
+        return $this->get('/activity/stats');
+    }
+
+    /**
+     * Clear activity log on WordPress site.
+     */
+    public function clearActivityLog(): ?array
+    {
+        return $this->post('/activity/clear');
+    }
+
+    // =========================================================================
+    // SITE INFO & SECURITY SETTINGS
+    // =========================================================================
+
+    /**
+     * Get comprehensive site information including users, content, comments.
+     */
+    public function getSiteInfo(): ?array
+    {
+        return $this->get('/site/info');
+    }
+
+    /**
+     * Get list of WordPress users.
+     */
+    public function getUsers(): ?array
+    {
+        return $this->get('/users/list');
+    }
+
+    /**
+     * Get current security settings.
+     */
+    public function getSecuritySettings(): ?array
+    {
+        return $this->get('/security/settings');
+    }
+
+    /**
+     * Update security settings.
+     */
+    public function updateSecuritySettings(array $settings): ?array
+    {
+        return $this->post('/security/settings', $settings);
+    }
+
+    /**
+     * Get security headers status for the site.
+     */
+    public function getSecurityHeaders(): ?array
+    {
+        return $this->get('/security/headers');
+    }
+
+    /**
+     * Get security header configuration snippets for Apache, Nginx, and PHP.
+     */
+    public function getSecurityHeaderSnippets(): ?array
+    {
+        return $this->get('/security/headers/snippets');
+    }
+
+    /**
+     * Legacy alias for backwards compatibility.
+     * @deprecated Use getPhpErrors() instead
+     */
+    public function getErrorLog(): ?array
+    {
+        return $this->getPhpErrors();
+    }
+
+    /**
+     * Legacy alias for backwards compatibility.
+     * @deprecated Use clearPhpErrors() instead
+     */
+    public function clearErrorLog(): ?array
+    {
+        return $this->clearPhpErrors();
+    }
+
 
     // =========================================================================
     // HELPERS

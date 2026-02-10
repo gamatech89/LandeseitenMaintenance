@@ -36,6 +36,7 @@ import {
   EyeOutlined,
   LockOutlined,
   CloseCircleOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -260,6 +261,30 @@ export function ProjectsPage() {
               </Tooltip>
             )}
           </Space>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip title="WordPress Plugin Connection">
+          <ApiOutlined style={{ color: '#667eea' }} />
+        </Tooltip>
+      ),
+      key: 'plugin',
+      width: 50,
+      align: 'center',
+      render: (_: unknown, record: Project) => {
+        const isConnected = !!(record as any).health_check_secret;
+        return (
+          <Tooltip title={isConnected ? 'Plugin connected' : 'Not connected - click to connect'}>
+            <ApiOutlined 
+              style={{ 
+                fontSize: 16,
+                color: isConnected ? '#22c55e' : '#94a3b8',
+                cursor: 'pointer',
+              }} 
+            />
+          </Tooltip>
         );
       },
     },

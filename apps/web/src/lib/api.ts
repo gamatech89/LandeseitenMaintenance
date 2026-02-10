@@ -27,6 +27,9 @@ import {
 import { createAvailabilityApi } from './availability-api';
 import { createRmbApi } from './rmb-api';
 import { createSupportTicketsApi } from './support-tickets-api';
+import { createBackupsApi } from './backups-api';
+import { createPhpErrorsApi } from './php-errors-api';
+import { createLibraryResourcesApi } from './library-resources-api';
 import { useAuthStore } from '@/stores/auth';
 
 // Create the base API client
@@ -62,9 +65,10 @@ export const api = {
   resources: createResourcesApi(client),
   rmb: createRmbApi(client),
   supportTickets: createSupportTicketsApi(client),
+  backups: createBackupsApi(client),
+  phpErrors: createPhpErrorsApi(client),
+  libraryResources: createLibraryResourcesApi(client),
 };
 
 // Export the raw client for custom requests
 export { client as apiClient };
-
-

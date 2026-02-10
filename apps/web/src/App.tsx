@@ -12,12 +12,13 @@ import { PublicSharePage } from './features/share/pages/PublicSharePage';
 // Protected Pages
 import { DashboardPage } from './features/dashboard/pages/DashboardPage';
 import { ProjectsPage } from './features/projects/pages/ProjectsPage';
-import { ProjectDetailPage } from './features/projects/pages/ProjectDetailPage';
+import { ProjectDetailPageV2 } from './features/projects/pages/ProjectDetailPageV2';
 import { VaultPage } from './features/vault/pages/VaultPage';
 import { TeamPage } from './features/team/pages/TeamPage';
 import { TagsPage } from './features/tags/pages/TagsPage';
 import { ProfilePage } from './features/profile/pages/ProfilePage';
 import { ActivityPage } from './features/admin/pages/ActivityPage';
+import { SettingsPage } from './features/settings/pages/SettingsPage';
 import { MaintenanceReportsPage } from './features/reports/pages/MaintenanceReportsPage';
 import { MyTimePage } from './features/time/pages/MyTimePage';
 import { ApprovalsPage } from './features/time/pages/ApprovalsPage';
@@ -25,6 +26,7 @@ import { FinancialReportsPage } from './features/time/pages/FinancialReportsPage
 import { AnalyticsPage } from './features/time/pages/AnalyticsPage';
 import { InvoicesPage } from './features/time/pages/InvoicesPage';
 import { SupportPage } from './features/support/pages/SupportPage';
+import LibraryResourcesPage from './features/library/LibraryResourcesPage';
 
 /**
  * Protected Route Wrapper
@@ -74,9 +76,10 @@ export function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
-        <Route path="projects/:id" element={<ProjectDetailPage />} />
+        <Route path="projects/:id" element={<ProjectDetailPageV2 />} />
         <Route path="projects/:projectId/reports" element={<MaintenanceReportsPage />} />
         <Route path="vault" element={<VaultPage />} />
+        <Route path="library" element={<LibraryResourcesPage />} />
         <Route path="support" element={<SupportPage />} />
         <Route path="team" element={<TeamPage />} />
         <Route path="tags" element={<TagsPage />} />
@@ -95,6 +98,14 @@ export function App() {
           element={
             <AdminRoute>
               <ActivityPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <AdminRoute>
+              <SettingsPage />
             </AdminRoute>
           }
         />

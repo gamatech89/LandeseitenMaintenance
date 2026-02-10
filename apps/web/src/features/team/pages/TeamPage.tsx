@@ -200,23 +200,28 @@ export function TeamPage() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 140,
       render: (_, record) =>
         isAdmin && (
-          <Space>
+          <Space size="small">
             <Button
               type="text"
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
-            />
+              style={{ color: '#64748b' }}
+            >
+              Edit
+            </Button>
             <Button
               type="text"
               size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleDelete(record)}
-            />
+            >
+              Delete
+            </Button>
           </Space>
         ),
     },

@@ -163,6 +163,7 @@ class ProjectController extends Controller
         $project->load([
             'credentials',
             'resources',
+            'libraryResources',
             'todos.assignee:id,name,email',
             'manager:id,name,email',
             'developer:id,name,email',
@@ -310,7 +311,6 @@ class ProjectController extends Controller
 
         return $this->successResponse(null, 'Project deleted successfully');
     }
-
     /**
      * Manually trigger a health check for a project.
      *
@@ -340,15 +340,28 @@ class ProjectController extends Controller
             if ($response->successful()) {
                 $healthData = $response->json();
                 
+                // Real SSL certificate check
+                $sslInfo = $this->checkSSL($project->url);
+                
                 $project->update([
                     'last_health_check_at' => now(),
                     'response_time_ms' => $responseTime,
                     'last_health_details' => $healthData,
                     'wp_version' => $healthData['wordpress']['version'] ?? null,
                     'php_version' => $healthData['php']['version'] ?? null,
-                    'outdated_plugins_count' => $healthData['plugins']['outdated_count'] ?? null,
-                    'ssl_status' => ($healthData['ssl']['enabled'] ?? false) ? 'valid' : 'none',
+                    'outdated_plugins_count' => $healthData['plugins']['outdated_count'] ?? 0,
+                    'ssl_status' => $sslInfo['status'],
+                    'ssl_expires_at' => $sslInfo['expires_at'] ?? null,
                     'health_status' => $this->determineHealthStatus($healthData),
+                ]);
+
+                // Log uptime check for historical tracking
+                \App\Models\UptimeCheck::create([
+                    'project_id' => $project->id,
+                    'status' => 'up',
+                    'http_status' => 200,
+                    'response_time_ms' => $responseTime,
+                    'checked_at' => now(),
                 ]);
 
                 return $this->successResponse([
@@ -372,6 +385,16 @@ class ProjectController extends Controller
                     ],
                 ]);
 
+                // Log failed uptime check
+                \App\Models\UptimeCheck::create([
+                    'project_id' => $project->id,
+                    'status' => 'down',
+                    'http_status' => $response->status(),
+                    'response_time_ms' => $responseTime,
+                    'error_message' => $errorMessage,
+                    'checked_at' => now(),
+                ]);
+
                 return $this->errorResponse('Health check endpoint returned error: ' . $errorMessage, 400);
             }
         } catch (\Exception $e) {
@@ -386,8 +409,56 @@ class ProjectController extends Controller
                 ],
             ]);
 
+            // Log error uptime check
+            \App\Models\UptimeCheck::create([
+                'project_id' => $project->id,
+                'status' => 'error',
+                'error_message' => $e->getMessage(),
+                'checked_at' => now(),
+            ]);
+
             return $this->errorResponse('Failed to connect: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Get uptime statistics for a project.
+     *
+     * @param Project $project
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function uptimeStats(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $days = (int) $request->query('days', 30);
+        $days = min(max($days, 1), 90); // Clamp between 1-90 days
+
+        $stats = \App\Models\UptimeCheck::getStats($project->id, $days);
+
+        // Get recent checks for chart data (last 50 checks or less)
+        $recentChecks = \App\Models\UptimeCheck::forProject($project->id)
+            ->lastDays($days)
+            ->orderBy('checked_at', 'asc')
+            ->limit(50)
+            ->get(['status', 'response_time_ms', 'error_message', 'checked_at']);
+
+        return $this->successResponse([
+            'uptime_percentage' => $stats['uptime_percentage'],
+            'total_checks' => $stats['total_checks'],
+            'up_count' => $stats['up_count'],
+            'redirect_count' => $stats['redirect_count'] ?? 0,
+            'down_count' => $stats['down_count'],
+            'avg_response_time' => round($stats['avg_response_time']),
+            'days' => $days,
+            'recent_checks' => $recentChecks->map(fn ($check) => [
+                'status' => $check->status,
+                'response_time' => $check->response_time_ms,
+                'error_message' => $check->error_message,
+                'checked_at' => $check->checked_at->toIso8601String(),
+            ]),
+        ]);
     }
 
     /**
@@ -450,6 +521,79 @@ class ProjectController extends Controller
                 'priority' => $todo['priority'],
                 'status' => 'pending',
             ]);
+        }
+    }
+
+    /**
+     * Check SSL certificate status by connecting to the server.
+     */
+    private function checkSSL(string $url): array
+    {
+        $parsedUrl = parse_url($url);
+        
+        if (($parsedUrl['scheme'] ?? '') !== 'https') {
+            return ['status' => 'none', 'message' => 'Not using HTTPS'];
+        }
+        
+        $host = $parsedUrl['host'] ?? '';
+        if (empty($host)) {
+            return ['status' => 'none', 'message' => 'Invalid URL'];
+        }
+
+        try {
+            $context = stream_context_create([
+                'ssl' => [
+                    'capture_peer_cert' => true,
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            
+            $socket = @stream_socket_client(
+                "ssl://{$host}:443",
+                $errno,
+                $errstr,
+                10,
+                STREAM_CLIENT_CONNECT,
+                $context
+            );
+            
+            if (!$socket) {
+                return ['status' => 'none', 'message' => "SSL connection failed: {$errstr}"];
+            }
+            
+            $params = stream_context_get_params($socket);
+            $cert = openssl_x509_parse($params['options']['ssl']['peer_certificate'] ?? null);
+            fclose($socket);
+            
+            if (!$cert) {
+                return ['status' => 'none', 'message' => 'Could not parse certificate'];
+            }
+            
+            $expiresAt = isset($cert['validTo_time_t']) 
+                ? date('Y-m-d', $cert['validTo_time_t']) 
+                : null;
+            $daysUntilExpiry = $expiresAt 
+                ? (strtotime($expiresAt) - time()) / 86400 
+                : null;
+            
+            if ($daysUntilExpiry !== null && $daysUntilExpiry < 0) {
+                $status = 'expired';
+            } elseif ($daysUntilExpiry !== null && $daysUntilExpiry < 30) {
+                $status = 'expiring_soon';
+            } else {
+                $status = 'valid';
+            }
+            
+            return [
+                'status' => $status,
+                'expires_at' => $expiresAt,
+                'days_until_expiry' => $daysUntilExpiry ? (int) $daysUntilExpiry : null,
+                'issuer' => $cert['issuer']['O'] ?? $cert['issuer']['CN'] ?? 'Unknown',
+            ];
+            
+        } catch (\Exception $e) {
+            return ['status' => 'none', 'message' => $e->getMessage()];
         }
     }
 

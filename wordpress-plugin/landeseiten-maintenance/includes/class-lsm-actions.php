@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 class LSM_Actions {
 
     /**
-     * Clear all caches.
+     * Clear all caches - Ultimate cache clearing for all layers.
      *
      * @return array Result with cleared caches.
      */
@@ -49,10 +49,15 @@ class LSM_Actions {
             $cleared[] = 'litespeed_cache';
         }
 
-        // WP Rocket
+        // WP Rocket - Full purge
         if (function_exists('rocket_clean_domain')) {
             rocket_clean_domain();
             $cleared[] = 'wp_rocket';
+        }
+        // WP Rocket - Also clean minified CSS/JS
+        if (function_exists('rocket_clean_minify')) {
+            rocket_clean_minify();
+            $cleared[] = 'wp_rocket_minify';
         }
 
         // Autoptimize
@@ -61,17 +66,53 @@ class LSM_Actions {
             $cleared[] = 'autoptimize';
         }
 
-        // SG Optimizer
+        // SG Optimizer (SiteGround SuperCacher)
         if (function_exists('sg_cachepress_purge_cache')) {
             sg_cachepress_purge_cache();
             $cleared[] = 'sg_optimizer';
         }
 
-        // Object cache
+        // Breeze (Cloudways)
+        if (class_exists('Breeze_PurgeCache')) {
+            Breeze_PurgeCache::breeze_cache_flush();
+            $cleared[] = 'breeze';
+        }
+
+        // Elementor - Regenerate CSS files
+        if (class_exists('\Elementor\Plugin')) {
+            // Clear Elementor CSS cache
+            \Elementor\Plugin::$instance->files_manager->clear_cache();
+            $cleared[] = 'elementor_css';
+        }
+
+        // Elementor Pro - Clear dynamic CSS if available
+        if (class_exists('\ElementorPro\Plugin')) {
+            if (method_exists('\ElementorPro\Plugin', 'instance')) {
+                $elementor_pro = \ElementorPro\Plugin::instance();
+                if (isset($elementor_pro->assets_manager)) {
+                    $elementor_pro->assets_manager->clear_assets_cache();
+                    $cleared[] = 'elementor_pro_assets';
+                }
+            }
+        }
+
+        // Object cache (Redis, Memcached, etc.)
         if (function_exists('wp_cache_flush')) {
             wp_cache_flush();
             $cleared[] = 'object_cache';
         }
+
+        // OPcache - Clear PHP opcode cache
+        if (function_exists('opcache_reset') && ini_get('opcache.enable')) {
+            @opcache_reset();
+            $cleared[] = 'opcache';
+        }
+
+        // WP transients - Clear expired transients
+        global $wpdb;
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%' AND option_name NOT IN (SELECT CONCAT('_transient_', SUBSTRING(option_name, 20)) FROM (SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%') AS t)");
+        $cleared[] = 'expired_transients';
 
         LSM_Logger::log('cache_cleared', 'success', [
             'cleared' => $cleared,
@@ -81,6 +122,7 @@ class LSM_Actions {
             'success' => true,
             'cleared' => $cleared,
             'count'   => count($cleared),
+            'message' => sprintf(__('%d cache layers cleared', 'landeseiten-maintenance'), count($cleared)),
         ];
     }
 
@@ -146,6 +188,281 @@ class LSM_Actions {
             'size_before'  => size_format($size_before),
             'size_after'   => size_format($size_after),
             'saved'        => size_format($saved),
+        ];
+    }
+
+    /**
+     * Cleanup database - removes revisions, transients, drafts, spam, etc.
+     *
+     * @param array $options Cleanup options (revisions, transients, drafts, spam, orphan_meta).
+     * @return array Result with cleanup details.
+     */
+    public static function cleanup_database($options = []) {
+        global $wpdb;
+
+        // Default: clean everything
+        $defaults = [
+            'revisions'    => true,
+            'transients'   => true,
+            'drafts'       => true,
+            'spam'         => true,
+            'trash'        => true,
+            'orphan_meta'  => true,
+        ];
+        $options = wp_parse_args($options, $defaults);
+
+        $results = [];
+        $total_deleted = 0;
+
+        // 1. Delete all post revisions (like WP Rocket does)
+        if (!empty($options['revisions'])) {
+            $revisions = $wpdb->query("DELETE FROM {$wpdb->posts} WHERE post_type = 'revision'");
+            $results['revisions'] = (int) $revisions;
+            $total_deleted += (int) $revisions;
+        }
+
+        // 2. Delete expired transients
+        if (!empty($options['transients'])) {
+            $time = time();
+            
+            // Get expired transient names first
+            $expired_names = $wpdb->get_col($wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options} 
+                WHERE option_name LIKE %s 
+                AND option_value < %d",
+                '_transient_timeout_%',
+                $time
+            ));
+            
+            $deleted_count = 0;
+            
+            if (!empty($expired_names)) {
+                // Delete the timeout entries
+                $deleted_timeouts = $wpdb->query(
+                    "DELETE FROM {$wpdb->options} 
+                    WHERE option_name LIKE '_transient_timeout_%' 
+                    AND option_value < {$time}"
+                );
+                $deleted_count += (int) $deleted_timeouts;
+                
+                // Delete matching transient values
+                foreach ($expired_names as $timeout_name) {
+                    $transient_name = str_replace('_transient_timeout_', '_transient_', $timeout_name);
+                    $wpdb->delete($wpdb->options, ['option_name' => $transient_name]);
+                    $deleted_count++;
+                }
+            }
+            
+            // Also clean expired site transients
+            $expired_site = $wpdb->get_col($wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options} 
+                WHERE option_name LIKE %s 
+                AND option_value < %d",
+                '_site_transient_timeout_%',
+                $time
+            ));
+            
+            if (!empty($expired_site)) {
+                $wpdb->query(
+                    "DELETE FROM {$wpdb->options} 
+                    WHERE option_name LIKE '_site_transient_timeout_%' 
+                    AND option_value < {$time}"
+                );
+                foreach ($expired_site as $timeout_name) {
+                    $transient_name = str_replace('_site_transient_timeout_', '_site_transient_', $timeout_name);
+                    $wpdb->delete($wpdb->options, ['option_name' => $transient_name]);
+                    $deleted_count++;
+                }
+            }
+            
+            $results['transients'] = $deleted_count;
+            $total_deleted += $deleted_count;
+        }
+
+        // 3. Delete auto-drafts
+        if (!empty($options['drafts'])) {
+            $drafts = $wpdb->query("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft'");
+            $results['drafts'] = (int) $drafts;
+            $total_deleted += (int) $drafts;
+        }
+
+        // 4. Delete spam comments
+        if (!empty($options['spam'])) {
+            $spam = $wpdb->query("DELETE FROM {$wpdb->comments} WHERE comment_approved = 'spam'");
+            $results['spam'] = (int) $spam;
+            $total_deleted += (int) $spam;
+        }
+
+        // 5. Delete trashed comments
+        if (!empty($options['trash'])) {
+            $trash = $wpdb->query("DELETE FROM {$wpdb->comments} WHERE comment_approved = 'trash'");
+            // Also delete trashed posts
+            $trash_posts = $wpdb->query("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash'");
+            $results['trash'] = (int) $trash + (int) $trash_posts;
+            $total_deleted += $results['trash'];
+        }
+
+        // 6. Delete orphaned postmeta
+        if (!empty($options['orphan_meta'])) {
+            $orphan_postmeta = $wpdb->query(
+                "DELETE pm FROM {$wpdb->postmeta} pm 
+                LEFT JOIN {$wpdb->posts} p ON pm.post_id = p.ID 
+                WHERE p.ID IS NULL"
+            );
+            $orphan_commentmeta = $wpdb->query(
+                "DELETE cm FROM {$wpdb->commentmeta} cm 
+                LEFT JOIN {$wpdb->comments} c ON cm.comment_id = c.comment_ID 
+                WHERE c.comment_ID IS NULL"
+            );
+            $results['orphan_meta'] = (int) $orphan_postmeta + (int) $orphan_commentmeta;
+            $total_deleted += $results['orphan_meta'];
+        }
+
+        LSM_Logger::log('database_cleanup', 'success', [
+            'results' => $results,
+            'total'   => $total_deleted,
+        ]);
+
+        // Build detailed message
+        $details = [];
+        if (!empty($results['revisions'])) {
+            $details[] = $results['revisions'] . ' revisions';
+        }
+        if (!empty($results['transients'])) {
+            $details[] = $results['transients'] . ' transients';
+        }
+        if (!empty($results['drafts'])) {
+            $details[] = $results['drafts'] . ' auto-drafts';
+        }
+        if (!empty($results['spam'])) {
+            $details[] = $results['spam'] . ' spam comments';
+        }
+        if (!empty($results['trash'])) {
+            $details[] = $results['trash'] . ' trashed items';
+        }
+        if (!empty($results['orphan_meta'])) {
+            $details[] = $results['orphan_meta'] . ' orphaned meta';
+        }
+        
+        $detailed_message = !empty($details) 
+            ? implode(', ', $details)
+            : 'No items to clean';
+
+        return [
+            'success'       => true,
+            'results'       => $results,
+            'total_deleted' => $total_deleted,
+            'message'       => $detailed_message,
+        ];
+    }
+
+    /**
+     * Get database statistics for cleanup preview.
+     *
+     * @return array Counts for each cleanup category.
+     */
+    public static function get_database_stats() {
+        global $wpdb;
+
+        // Count revisions
+        $revisions = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'revision'"
+        );
+
+        // Count auto-drafts
+        $drafts = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'auto-draft'"
+        );
+
+        // Count trashed posts
+        $trashed_posts = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'trash'"
+        );
+
+        // Count spam comments
+        $spam_comments = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'"
+        );
+
+        // Count trashed comments
+        $trashed_comments = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'trash'"
+        );
+
+        // Count expired transients
+        $time = time();
+        $expired_transients = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%' AND option_value < {$time}"
+        );
+
+        // Count all transients (for display)
+        $all_transients = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'"
+        );
+
+        // Count orphaned postmeta
+        $orphan_postmeta = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->postmeta} pm 
+            LEFT JOIN {$wpdb->posts} p ON pm.post_id = p.ID 
+            WHERE p.ID IS NULL"
+        );
+
+        // Count orphaned commentmeta
+        $orphan_commentmeta = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->commentmeta} cm 
+            LEFT JOIN {$wpdb->comments} c ON cm.comment_id = c.comment_ID 
+            WHERE c.comment_ID IS NULL"
+        );
+
+        // Get tables that can be optimized
+        $tables = $wpdb->get_results("SHOW TABLE STATUS LIKE '{$wpdb->prefix}%'", ARRAY_A);
+        $tables_to_optimize = 0;
+        $potential_savings = 0;
+        foreach ($tables as $table) {
+            if (isset($table['Data_free']) && $table['Data_free'] > 0) {
+                $tables_to_optimize++;
+                $potential_savings += (int) $table['Data_free'];
+            }
+        }
+
+        return [
+            'success' => true,
+            'stats' => [
+                'revisions' => [
+                    'count' => $revisions,
+                    'label' => 'Post Revisions',
+                ],
+                'drafts' => [
+                    'count' => $drafts,
+                    'label' => 'Auto-Drafts',
+                ],
+                'trashed_posts' => [
+                    'count' => $trashed_posts,
+                    'label' => 'Trashed Posts',
+                ],
+                'spam_comments' => [
+                    'count' => $spam_comments,
+                    'label' => 'Spam Comments',
+                ],
+                'trashed_comments' => [
+                    'count' => $trashed_comments,
+                    'label' => 'Trashed Comments',
+                ],
+                'transients' => [
+                    'count' => $expired_transients,
+                    'total' => $all_transients,
+                    'label' => 'Expired Transients',
+                ],
+                'orphan_meta' => [
+                    'count' => $orphan_postmeta + $orphan_commentmeta,
+                    'label' => 'Orphaned Meta',
+                ],
+                'optimize' => [
+                    'tables' => $tables_to_optimize,
+                    'potential_savings' => size_format($potential_savings),
+                    'label' => 'Tables to Optimize',
+                ],
+            ],
         ];
     }
 

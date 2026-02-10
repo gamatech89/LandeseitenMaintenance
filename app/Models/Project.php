@@ -29,6 +29,23 @@ class Project extends Model
         'manager_id',
         'developer_id',
         'is_maintenance',
+        // Health monitoring fields
+        'last_health_check_at',
+        'response_time_ms',
+        'last_health_details',
+        'wp_version',
+        'php_version',
+        'outdated_plugins_count',
+        'ssl_status',
+        'ssl_expires_at',
+        'uptime_monitoring_enabled',
+        // Monitoring & notification fields
+        'ssl_alerts_enabled',
+        'domain_alerts_enabled',
+        'notification_preferences',
+        // Domain expiry (WHOIS)
+        'domain_expires_at',
+        'domain_registrar',
     ];
 
     protected $appends = ['highest_todo_priority'];
@@ -38,7 +55,12 @@ class Project extends Model
         return [
             'last_health_check_at' => 'datetime',
             'ssl_expires_at' => 'date',
+            'domain_expires_at' => 'date',
             'last_health_details' => 'array',
+            'uptime_monitoring_enabled' => 'boolean',
+            'ssl_alerts_enabled' => 'boolean',
+            'domain_alerts_enabled' => 'boolean',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -181,6 +203,40 @@ class Project extends Model
     {
         return $this->hasMany(TimeEntry::class);
     }
+
+    /**
+     * Get the backups for the project.
+     */
+    public function backups(): HasMany
+    {
+        return $this->hasMany(Backup::class);
+    }
+
+    /**
+     * Get the PHP errors for the project.
+     */
+    public function phpErrors(): HasMany
+    {
+        return $this->hasMany(PhpError::class);
+    }
+
+    /**
+     * Get the library resources linked to this project.
+     */
+    public function libraryResources(): BelongsToMany
+    {
+        return $this->belongsToMany(LibraryResource::class, 'project_library_resource')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the uptime check history for this project.
+     */
+    public function uptimeChecks(): HasMany
+    {
+        return $this->hasMany(UptimeCheck::class)->orderBy('checked_at', 'desc');
+    }
+
 
     /**
      * Update the tracked time for this project.

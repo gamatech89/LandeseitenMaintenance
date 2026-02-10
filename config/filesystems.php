@@ -68,7 +68,55 @@ return [
             'report' => false,
         ],
 
+        // =====================================================================
+        // BACKUP STORAGE DISKS
+        // =====================================================================
+
+        // Local backup storage (default for development/testing)
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // S3 backup storage
+        'backups-s3' => [
+            'driver' => 's3',
+            'key' => env('BACKUP_AWS_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('BACKUP_AWS_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('BACKUP_AWS_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'eu-central-1')),
+            'bucket' => env('BACKUP_AWS_BUCKET', 'lsm-backups'),
+            'url' => env('BACKUP_AWS_URL'),
+            'endpoint' => env('BACKUP_AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('BACKUP_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Google Cloud Storage backup (uses S3-compatible API)
+        'backups-gcs' => [
+            'driver' => 's3',
+            'key' => env('GOOGLE_CLOUD_KEY_ID'),
+            'secret' => env('GOOGLE_CLOUD_SECRET'),
+            'region' => env('GOOGLE_CLOUD_REGION', 'auto'),
+            'bucket' => env('GOOGLE_CLOUD_BUCKET', 'lsm-backups'),
+            'endpoint' => 'https://storage.googleapis.com',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Google Drive backup storage (requires flysystem-google-drive package)
+        'backups-gdrive' => [
+            'driver' => 'google',
+            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'),
+        ],
+
     ],
+
 
     /*
     |--------------------------------------------------------------------------

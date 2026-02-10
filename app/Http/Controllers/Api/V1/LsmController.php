@@ -67,6 +67,50 @@ class LsmController extends Controller
     }
 
     /**
+     * Get all installed plugins.
+     */
+    public function getPlugins(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $plugins = $lsm->getPlugins();
+
+        if (!$plugins) {
+            return response()->json(['error' => 'Failed to fetch plugins'], 500);
+        }
+
+        return response()->json($plugins);
+    }
+
+    /**
+     * Get all installed themes.
+     */
+    public function getThemes(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $themes = $lsm->getThemes();
+
+        if (!$themes) {
+            return response()->json(['error' => 'Failed to fetch themes'], 500);
+        }
+
+        return response()->json($themes);
+    }
+
+    /**
      * Generate SSO login token and return login URL.
      */
     public function generateLoginToken(Project $project, Request $request): JsonResponse
@@ -168,6 +212,106 @@ class LsmController extends Controller
     }
 
     /**
+     * Update a single plugin.
+     */
+    public function updatePlugin(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $request->validate(['slug' => 'required|string']);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->updatePlugin($request->input('slug'));
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to update plugin'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Activate a plugin.
+     */
+    public function activatePlugin(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $request->validate(['slug' => 'required|string']);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->activatePlugin($request->input('slug'));
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to activate plugin'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Deactivate a plugin.
+     */
+    public function deactivatePlugin(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $request->validate(['slug' => 'required|string']);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->deactivatePlugin($request->input('slug'));
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to deactivate plugin'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Delete a plugin.
+     */
+    public function deletePlugin(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $request->validate(['slug' => 'required|string']);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->deletePlugin($request->input('slug'));
+
+        if (!$result || isset($result['error'])) {
+            return response()->json($result ?? ['error' => 'Failed to delete plugin'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plugin deleted successfully',
+            ...$result,
+        ]);
+    }
+
+    /**
      * Update WordPress core.
      */
     public function updateCore(Project $project): JsonResponse
@@ -201,6 +345,51 @@ class LsmController extends Controller
         $result = $lsm->optimizeDatabase();
 
         return response()->json($result ?? ['error' => 'Failed to optimize database']);
+    }
+
+    /**
+     * Cleanup database - removes revisions, transients, drafts, spam, etc.
+     */
+    public function cleanupDatabase(Request $request, Project $project): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $options = $request->only([
+            'revisions',
+            'transients', 
+            'drafts',
+            'spam',
+            'trash',
+            'orphan_meta',
+        ]);
+
+        $result = $lsm->cleanupDatabase($options);
+
+        return response()->json($result ?? ['error' => 'Failed to cleanup database']);
+    }
+
+    /**
+     * Get database statistics for cleanup preview.
+     */
+    public function getDatabaseStats(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getDatabaseStats();
+
+        return response()->json($result ?? ['error' => 'Failed to get database stats']);
     }
 
     /**
@@ -316,6 +505,48 @@ class LsmController extends Controller
     }
 
     /**
+     * Activate a specific theme.
+     */
+    public function activateTheme(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $slug = $request->input('slug');
+
+        if (empty($slug)) {
+            return response()->json(['error' => 'Theme slug is required'], 400);
+        }
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->activateTheme($slug);
+
+        return response()->json($result ?? ['error' => 'Failed to activate theme']);
+    }
+
+    /**
+     * Switch to default theme.
+     */
+    public function switchTheme(Project $project): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->switchTheme();
+
+        return response()->json($result ?? ['error' => 'Failed to switch theme']);
+    }
+
+    /**
      * Execute full emergency recovery.
      */
     public function emergencyRecovery(Project $project): JsonResponse
@@ -384,5 +615,352 @@ class LsmController extends Controller
 
         // Return the file as download
         return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    // ================================================================
+    // PHP ERROR MONITORING METHODS
+    // ================================================================
+
+    /**
+     * Get PHP errors directly from WordPress.
+     */
+    public function getPhpErrors(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $filters = [];
+        if ($request->has('type')) {
+            $filters['type'] = $request->type;
+        }
+        if ($request->has('limit')) {
+            $filters['limit'] = (int) $request->limit;
+        }
+
+        $result = $lsm->getPhpErrors($filters);
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch PHP errors from WordPress'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['errors'] ?? $result,
+            'stats' => $result['stats'] ?? null,
+        ]);
+    }
+
+    /**
+     * Get PHP error statistics from WordPress.
+     */
+    public function getPhpErrorStats(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getPhpErrorStats();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch PHP error stats from WordPress'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Sync PHP errors from WordPress to local database.
+     * Fetches errors from WordPress and stores them locally for faster access.
+     */
+    public function syncPhpErrors(Project $project): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        // Fetch errors from WordPress
+        $result = $lsm->getPhpErrors(['limit' => 100]);
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch PHP errors from WordPress'], 500);
+        }
+
+        $errors = $result['errors'] ?? $result;
+        $synced = 0;
+        $skipped = 0;
+
+        if (is_array($errors)) {
+            foreach ($errors as $error) {
+                try {
+                    // Use the PhpError model to log/update the error
+                    \App\Models\PhpError::logError(
+                        $project->id,
+                        $error['type'] ?? 'notice',
+                        $error['message'] ?? 'Unknown error',
+                        $error['file'] ?? null,
+                        $error['line'] ?? null,
+                        [
+                            'wordpress_version' => $error['wordpress_version'] ?? null,
+                            'php_version' => $error['php_version'] ?? null,
+                            'plugin_slug' => $error['plugin_slug'] ?? null,
+                            'theme_slug' => $error['theme_slug'] ?? null,
+                        ]
+                    );
+                    $synced++;
+                } catch (\Exception $e) {
+                    $skipped++;
+                }
+            }
+        }
+
+        // Update project's last sync timestamp
+        $project->update(['php_errors_synced_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Synced {$synced} errors from WordPress",
+            'synced' => $synced,
+            'skipped' => $skipped,
+            'synced_at' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Clear PHP errors on WordPress site.
+     */
+    public function clearPhpErrors(Project $project): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->clearPhpErrors();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to clear PHP errors on WordPress'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PHP errors cleared on WordPress',
+            ...$result,
+        ]);
+    }
+
+    // =========================================================================
+    // Activity Log (from WordPress)
+    // =========================================================================
+
+    /**
+     * Get activity log from WordPress.
+     */
+    public function getActivity(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $limit = $request->input('limit', 50);
+        $action = $request->input('action');
+
+        $result = $lsm->getActivity($limit, $action);
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch activity from WordPress'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get activity statistics from WordPress.
+     */
+    public function getActivityStats(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getActivityStats();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch activity stats from WordPress'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    // =========================================================================
+    // SITE INFO & SECURITY SETTINGS
+    // =========================================================================
+
+    /**
+     * Get comprehensive site information.
+     */
+    public function getSiteInfo(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getSiteInfo();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch site info'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get list of WordPress users.
+     */
+    public function getUsers(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getUsers();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch users'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get current security settings.
+     */
+    public function getSecuritySettings(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getSecuritySettings();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch security settings'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Update security settings.
+     */
+    public function updateSecuritySettings(Project $project, Request $request): JsonResponse
+    {
+        Gate::authorize('update', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $settings = $request->only([
+            'comments_enabled',
+            'registration_enabled',
+            'xmlrpc_enabled',
+            'rest_api_public',
+            'file_editing_disabled',
+            'debug_enabled',
+            'security_headers_enabled',
+        ]);
+
+        $result = $lsm->updateSecuritySettings($settings);
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to update security settings'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get security headers status for the site.
+     */
+    public function getSecurityHeaders(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getSecurityHeaders();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to fetch security headers'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get security header configuration snippets for Apache, Nginx, and PHP.
+     */
+    public function getSecurityHeaderSnippets(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $lsm = LsmService::for($project);
+
+        if (!$lsm->isConfigured()) {
+            return response()->json(['error' => 'LSM not configured'], 400);
+        }
+
+        $result = $lsm->getSecurityHeaderSnippets();
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to generate security header snippets'], 500);
+        }
+
+        return response()->json($result);
     }
 }
