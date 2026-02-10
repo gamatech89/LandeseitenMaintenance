@@ -3,6 +3,9 @@
 .env
 .env.backup
 .env.production
+.env.*
+!.env.example
+!.env.production.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -23,3 +26,16 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 database/data/projects.csv
+
+# Frontend build artifacts
+apps/web/dist/
+apps/web/build/
+apps/*/dist/
+apps/*/build/
+
+# WordPress plugin builds
+wordpress-plugin/*.zip
+*.zip
+
+# Antigravity artifacts
+.gemini/
